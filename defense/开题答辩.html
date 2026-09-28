@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>开题答辩 · 基于混合推荐引擎的智能音乐播放平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;560;590;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ==================== CSS VARIABLES (Linear Style) ==================== */
+:root{
+  --acid-lime:#e4f222;
+  --pulse-green:#27a644;
+  --coral-red:#eb5757;
+  --signal-teal:#02b8cc;
+  --iris-violet:#6366f1;
+  --void:#08090a;
+  --carbon:#0f1011;
+  --obsidian:#161718;
+  --graphite:#23252a;
+  --smoke:#383b3f;
+  --ash:#62666d;
+  --fog:#8a8f98;
+  --mist:#d0d6e0;
+  --bone:#e5e5e6;
+  --paper:#ffffff;
+  --font-display:'Inter','PingFang SC','Microsoft YaHei',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,monospace;
+  --radius-card:12px;
+  --radius-btn:6px;
+  --radius-pill:9999px;
+}
+
+/* ==================== GLOBAL ==================== */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a1a;color:var(--mist);font-family:var(--font-display);font-feature-settings:'cv01','ss03','zero';}
+
+/* ==================== CANVAS ==================== */
+.deck{
+  position:fixed;top:50%;left:50%;
+  width:1280px;height:720px;
+  transform:translate(-50%,-50%) scale(1);
+  transform-origin:center center;
+  background:var(--void);color:var(--mist);
+  box-shadow:0 10px 60px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.2);
+  overflow:hidden;
+}
+
+/* ==================== SLIDES ==================== */
+.slide{
+  position:absolute;inset:0;
+  padding-top:56px;padding-bottom:56px;padding-left:72px;padding-right:72px;
+  opacity:0;visibility:hidden;
+  transition:opacity .5s cubic-bezier(.2,.7,.2,1),visibility .5s;
+  display:grid;
+}
+.slide.active{opacity:1;visibility:visible;}
+
+/* ==================== CHROME ==================== */
+.chrome-top,.chrome-bottom{
+  position:absolute;left:0;right:0;
+  height:40px;padding:0 72px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:var(--fog);letter-spacing:.08em;
+  z-index:10;
+}
+.chrome-top{top:0;}
+.chrome-bottom{bottom:0;}
+.brand-dot{width:6px;height:6px;border-radius:50%;background:var(--acid-lime);display:inline-block;margin-right:10px;vertical-align:middle;box-shadow:0 0 8px var(--acid-lime);}
+.page-num em{color:var(--acid-lime);font-style:normal;font-weight:600;margin-right:2px;font-variant-numeric:tabular-nums;}
+
+/* Hide global chrome on close slide (T08 has its own chrome) */
+.deck:has(.s-close.active) .chrome-top,
+.deck:has(.s-close.active) .chrome-bottom{opacity:0;visibility:hidden;}
+
+/* ==================== NAV DOTS ==================== */
+.nav-dots{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:50;}
+.nav-dots .dot{width:6px;height:6px;border-radius:3px;background:var(--smoke);transition:all .3s;cursor:pointer;}
+.nav-dots .dot.active{width:22px;background:var(--acid-lime);}
+
+/* ==================== TYPOGRAPHY ==================== */
+.kicker{font-size:11px;color:var(--acid-lime);font-weight:500;letter-spacing:.16em;text-transform:uppercase;}
+.h-display{font-size:72px;font-weight:590;line-height:.96;letter-spacing:-.022em;color:var(--paper);}
+.h-1{font-size:48px;font-weight:590;line-height:1.04;letter-spacing:-.022em;color:var(--paper);}
+.h-2{font-size:32px;font-weight:560;line-height:1.15;letter-spacing:-.015em;color:var(--bone);}
+.h-3{font-size:22px;font-weight:560;line-height:1.25;color:var(--bone);}
+.lead{font-size:18px;font-weight:400;line-height:1.6;color:var(--mist);max-width:62ch;}
+.body{font-size:15px;font-weight:400;line-height:1.6;color:var(--mist);}
+.mono{font-family:var(--font-mono);font-size:13px;color:var(--acid-lime);background:rgba(228,242,34,.08);padding:2px 8px;border-radius:4px;}
+
+/* ==================== STAGGER ==================== */
+.stagger > *{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease;}
+.slide.active .stagger > *{opacity:1;transform:translateY(0);}
+.slide.active .stagger > *:nth-child(1){transition-delay:.08s;}
+.slide.active .stagger > *:nth-child(2){transition-delay:.16s;}
+.slide.active .stagger > *:nth-child(3){transition-delay:.24s;}
+.slide.active .stagger > *:nth-child(4){transition-delay:.32s;}
+.slide.active .stagger > *:nth-child(5){transition-delay:.40s;}
+
+/* ==================== T01-C COVER MINIMAL ==================== */
+.s-cover-min{grid-template-rows:auto 1fr auto;gap:0;}
+.cover-min-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding-bottom:24px;color:var(--fog);}
+.cover-min-center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:0;}
+.cover-min-center .h-display{font-size:108px;font-weight:200;line-height:.92;max-width:1100px;}
+.cover-min-center .lead{margin-top:28px;font-size:16px;color:var(--mist);}
+.cover-min-bottom{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding-top:24px;color:var(--fog);}
+
+/* ==================== T02 AGENDA ==================== */
+.s-agenda{grid-template-columns:330px 1fr;gap:72px;align-items:center;}
+.agenda-list{display:flex;flex-direction:column;min-height:0;overflow:hidden;max-height:582px;align-content:center;}
+.agenda-item{display:grid;grid-template-columns:60px 1fr auto;padding:18px 0;gap:20px;border-top:.5px solid var(--graphite);font-size:16px;}
+.agenda-item:last-child{border-bottom:.5px solid var(--graphite);}
+.agenda-item .idx{font-size:22px;font-weight:300;color:var(--ash);font-family:var(--font-mono);}
+.agenda-item .name{font-size:20px;font-weight:500;color:var(--bone);}
+.agenda-item .en{font-size:11px;color:var(--fog);letter-spacing:.06em;align-self:center;}
+
+/* ==================== T03 BRAND ==================== */
+.s-brand{grid-template-columns:1fr 1fr;gap:69px;align-items:center;}
+.brand-left .h-1{margin-top:20px;}
+.brand-left .lead{margin-top:22px;}
+.brand-stats{margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-top:24px;border-top:.5px solid var(--graphite);}
+.brand-stats .k{font-size:46px;font-weight:200;color:var(--acid-lime);font-family:var(--font-mono);}
+.brand-stats .lbl{font-size:12px;margin-top:8px;color:var(--fog);}
+.brand-cards{display:flex;flex-direction:column;gap:14px;max-height:582px;overflow:hidden;justify-content:center;}
+.brand-card{display:grid;grid-template-columns:46px 1fr auto;gap:22px;padding:20px 24px;background:var(--carbon);border:.5px solid var(--graphite);border-radius:var(--radius-card);align-items:center;}
+.brand-card > div:first-child{font-size:12px;color:var(--ash);font-family:var(--font-mono);font-weight:500;}
+.brand-card .tag{font-size:11px;color:var(--acid-lime);letter-spacing:.06em;}
+.brand-card .title{font-size:17px;font-weight:600;color:var(--bone);margin-top:4px;}
+.brand-card .desc{font-size:13px;color:var(--fog);margin-top:6px;line-height:1.5;}
+.brand-card .badge{font-size:11px;padding:6px 12px;background:rgba(228,242,34,.08);color:var(--acid-lime);border-radius:var(--radius-pill);}
+
+/* ==================== T05 TEAM CARDS ==================== */
+.s-team{grid-template-columns:40% 1fr;gap:77px;align-items:center;}
+.team-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-height:582px;overflow:hidden;align-content:center;}
+.team-card{padding:24px;background:var(--carbon);border:.5px solid var(--graphite);border-radius:var(--radius-card);display:flex;flex-direction:column;gap:12px;}
+.team-card .idx{font-size:12px;color:var(--acid-lime);letter-spacing:.08em;font-family:var(--font-mono);}
+.team-card .title{font-size:19px;font-weight:600;color:var(--bone);}
+.team-card .en-sub{font-size:11px;color:var(--fog);letter-spacing:.04em;}
+.team-card .desc{font-size:13px;color:var(--mist);line-height:1.55;margin-top:auto;}
+
+/* ==================== T06 REFINE LIST ==================== */
+.s-refine{grid-template-columns:34% 1fr;gap:72px;align-items:center;}
+.refine-list{display:flex;flex-direction:column;max-height:582px;overflow:hidden;align-content:center;}
+.refine-item{display:grid;grid-template-columns:90px 1fr;gap:32px;padding:18px 0;border-top:.5px solid var(--graphite);}
+.refine-item:last-child{border-bottom:.5px solid var(--graphite);}
+.refine-item .idx{font-size:13px;padding-top:5px;color:var(--acid-lime);font-family:var(--font-mono);}
+.refine-item .h{font-size:20px;font-weight:600;color:var(--bone);}
+.refine-item .d{font-size:13.5px;color:var(--fog);margin-top:6px;line-height:1.55;}
+
+/* ==================== T04 GRID LINES ==================== */
+.s-lines{display:flex !important;flex-direction:column;justify-content:center;gap:32px;padding-top:56px;padding-bottom:56px;}
+.lines-head{display:grid;grid-template-columns:1fr auto;align-items:end;gap:32px;}
+.lines-head .h-1{font-size:40px;}
+.lines-head .lead{font-size:14px;}
+.lines-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;overflow:hidden;flex-shrink:0;border:.5px solid var(--graphite);border-radius:var(--radius-card);background:var(--graphite);}
+.line-cell{padding:24px 22px 20px;background:var(--carbon);display:flex;flex-direction:column;gap:8px;}
+.line-cell .num{font-size:22px;font-weight:300;color:var(--ash);font-family:var(--font-mono);}
+.line-cell .name{font-size:16px;font-weight:600;color:var(--bone);}
+.line-cell .en{font-size:10px;color:var(--fog);letter-spacing:.04em;}
+.line-cell .desc{font-size:12px;color:var(--mist);margin-top:8px;line-height:1.5;}
+.line-cell .accent{font-size:10px;color:var(--acid-lime);letter-spacing:.06em;margin-top:4px;}
+
+/* ==================== T24 FREE DUAL (for algorithm slide) ==================== */
+.s-free-dual{grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+.free-left{display:flex;flex-direction:column;gap:16px;}
+.free-right{display:flex;flex-direction:column;gap:12px;}
+.formula-block{background:var(--carbon);border:.5px solid var(--graphite);border-radius:var(--radius-card);padding:18px 22px;font-family:var(--font-mono);font-size:13px;line-height:1.9;color:var(--mist);}
+.formula-block .kw{color:var(--acid-lime);font-weight:500;}
+.formula-block .cm{color:var(--ash);font-style:italic;}
+.formula-block .num{color:var(--iris-violet);}
+.fact-card{padding:14px 18px;background:var(--carbon);border:.5px solid var(--graphite);border-radius:var(--radius-btn);}
+.fact-card .tag{font-size:10px;color:var(--acid-lime);letter-spacing:.1em;font-weight:600;font-family:var(--font-mono);}
+.fact-card .desc{font-size:13px;color:var(--mist);margin-top:6px;line-height:1.5;}
+
+/* ==================== SVG ARCHITECTURE ==================== */
+.arch-svg-wrap{width:100%;height:auto;max-height:580px;overflow:hidden;}
+
+/* ==================== WEIGHT BARS ==================== */
+.weight-row{display:flex;align-items:center;gap:14px;margin:8px 0;}
+.weight-label{width:120px;font-size:12px;color:var(--fog);flex-shrink:0;}
+.weight-bar{flex:1;height:20px;background:var(--carbon);border:.5px solid var(--graphite);border-radius:var(--radius-btn);overflow:hidden;display:flex;}
+.weight-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--void);letter-spacing:.04em;font-family:var(--font-mono);}
+.seg-cf{background:var(--acid-lime);}
+.seg-cb{background:var(--signal-teal);color:var(--paper);}
+.seg-pop{background:var(--iris-violet);color:var(--paper);}
+.seg-rand{background:var(--smoke);color:var(--mist);}
+.weight-tag{width:50px;text-align:center;font-size:10px;font-weight:600;flex-shrink:0;font-family:var(--font-mono);border-radius:var(--radius-pill);padding:3px 0;}
+.tag-cold{background:rgba(235,87,87,.15);color:var(--coral-red);}
+.tag-sparse{background:rgba(228,242,34,.12);color:var(--acid-lime);}
+.tag-hot{background:rgba(39,166,68,.15);color:var(--pulse-green);}
+
+/* ==================== T08 CLOSING ==================== */
+.s-close{grid-template-columns:1fr 1fr;padding:0;overflow:hidden;}
+.close-left{background:var(--obsidian);padding:28px 46px 28px 77px;display:flex;flex-direction:column;justify-content:space-between;position:relative;}
+.close-left .chrome-min,.close-right .chrome-min{font-size:11px;color:var(--fog);letter-spacing:.1em;display:flex;justify-content:space-between;}
+.manifesto{display:flex;flex-direction:column;gap:14px;max-height:582px;overflow:hidden;}
+.manifesto .meta{font-size:12px;color:var(--acid-lime);letter-spacing:.1em;font-family:var(--font-mono);}
+.manifesto h2{font-size:64px;font-weight:200;line-height:.96;color:var(--paper);}
+.manifesto .sub{font-size:15px;color:var(--mist);max-width:40ch;}
+.sig{display:flex;justify-content:space-between;font-size:12px;color:var(--fog);}
+.close-right{background:var(--void);padding:28px 77px 28px 46px;display:flex;flex-direction:column;justify-content:space-between;}
+.takeaways{display:flex;flex-direction:column;gap:8px;max-height:582px;overflow:hidden;align-content:center;justify-content:center;}
+.take-item{display:grid;grid-template-columns:auto 1fr;gap:24px;padding:20px 0;border-top:.5px solid var(--graphite);}
+.take-item:last-child{border-bottom:.5px solid var(--graphite);}
+.take-item .num{font-size:42px;font-weight:200;color:var(--acid-lime);font-family:var(--font-mono);line-height:1;}
+.take-item h3{font-size:19px;font-weight:600;color:var(--bone);margin-bottom:6px;}
+.take-item p{font-size:13.5px;color:var(--fog);line-height:1.55;}
+.foot{font-size:13px;color:var(--acid-lime);font-weight:500;letter-spacing:.04em;}
+
+/* ==================== TABLE (inline) ==================== */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{font-size:10px;color:var(--acid-lime);letter-spacing:.08em;text-align:left;padding:10px 12px;font-weight:500;border-bottom:.5px solid var(--graphite);}
+.data-table td{padding:8px 12px;color:var(--mist);border-bottom:.5px solid var(--graphite);font-family:var(--font-mono);}
+.data-table td.human{font-family:var(--font-display);font-size:12px;color:var(--fog);line-height:1.5;}
+.tag-chip{display:inline-block;padding:2px 10px;border-radius:var(--radius-pill);font-size:10px;font-weight:600;font-family:var(--font-mono);letter-spacing:.04em;}
+
+/* ==================== TIMELINE ==================== */
+.timeline-wrap{position:relative;padding-left:28px;}
+.timeline-wrap::before{content:'';position:absolute;left:10px;top:4px;bottom:4px;width:1px;background:linear-gradient(to bottom,var(--acid-lime),var(--graphite));}
+.tl-item{position:relative;padding:10px 0 16px;}
+.tl-item::before{content:'';position:absolute;left:-22px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--graphite);border:2px solid var(--void);}
+.tl-item.done::before{background:var(--pulse-green);box-shadow:0 0 0 2px rgba(39,166,68,.25);}
+.tl-item.active::before{background:var(--acid-lime);box-shadow:0 0 0 2px rgba(228,242,34,.25);}
+.tl-time{font-size:12px;color:var(--acid-lime);font-family:var(--font-mono);font-weight:500;}
+.tl-item.done .tl-time{color:var(--pulse-green);}
+.tl-content{font-size:13px;color:var(--mist);margin-top:4px;line-height:1.5;}
+
+/* ==================== UTILS ==================== */
+.nochrome-bottom .slide{padding-bottom:56px;}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div class="deck" id="canvas">
+
+<!-- ========== GLOBAL CHROME ========== -->
+<div class="chrome-top"><div><span class="brand-dot"></span>开题答辩 · 2026</div><div>基于混合推荐引擎的智能音乐播放平台</div></div>
+<div class="chrome-bottom"><div>软件工程 · 钟靖</div><div class="page-num"><em id="cur">01</em> / <span id="tot">10</span></div></div>
+<div class="nav-dots" id="dots"></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: T01-C COVER MINIMAL                                  -->
+<!-- ============================================================ -->
+<section class="slide s-cover-min active">
+  <div class="cover-min-top"><span>ZHONG JING · 钟靖</span><span>2026 · OPENING DEFENSE</span></div>
+  <div class="cover-min-center stagger">
+    <div class="kicker" style="color:var(--acid-lime);margin-bottom:14px;">南昌应用技术师范学院 · 软件工程专业</div>
+    <h1 class="h-display" style="font-size:92px;">基于混合推荐引擎的<br>智能音乐播放平台</h1>
+    <p class="lead">Hybrid Recommendation Engine · Dual-End Music Platform</p>
+  </div>
+  <div class="cover-min-bottom"><span>指导教师：__________</span><span>答辩日期：2026 年 10 月</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: T02 AGENDA                                           -->
+<!-- ============================================================ -->
+<section class="slide s-agenda">
+  <div class="stagger">
+    <span class="kicker">Table of Contents</span>
+    <h1 class="h-1" style="margin-top:20px;">汇报提纲</h1>
+    <p class="lead" style="margin-top:22px;">八个章节，从问题定义到工程落地，完整呈现课题研究全景。</p>
+  </div>
+  <div class="agenda-list stagger">
+    <div class="agenda-item"><span class="idx">01</span><span class="name">课题背景与研究意义</span><span class="en">Background &amp; Significance</span></div>
+    <div class="agenda-item"><span class="idx">02</span><span class="name">国内外研究现状</span><span class="en">Related Work</span></div>
+    <div class="agenda-item"><span class="idx">03</span><span class="name">研究内容与目标</span><span class="en">Research Scope &amp; Goals</span></div>
+    <div class="agenda-item"><span class="idx">04</span><span class="name">核心算法深度剖析</span><span class="en">Hybrid Algorithm</span></div>
+    <div class="agenda-item"><span class="idx">05</span><span class="name">系统架构与设计</span><span class="en">Architecture Design</span></div>
+    <div class="agenda-item"><span class="idx">06</span><span class="name">数据库与 REST API</span><span class="en">Database &amp; Interfaces</span></div>
+    <div class="agenda-item"><span class="idx">07</span><span class="name">进度安排与交付物</span><span class="en">Schedule &amp; Deliverables</span></div>
+    <div class="agenda-item"><span class="idx">08</span><span class="name">总结 · 风险 · 展望</span><span class="en">Conclusion &amp; Outlook</span></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: T03 BRAND — 背景 + 3 创新点                          -->
+<!-- ============================================================ -->
+<section class="slide s-brand">
+  <div class="brand-left stagger">
+    <span class="kicker">01 / Background</span>
+    <h1 class="h-1">为什么需要这个系统？</h1>
+    <p class="lead">全球在线音乐订阅已突破 5 亿用户，曲库规模数千万首。传统排行榜反映热门但无法个性化，推荐系统解决"不知道自己想听什么"的主动发现问题。</p>
+    <div class="brand-stats">
+      <div><div class="k">5亿</div><div class="lbl">全球音乐订阅用户</div></div>
+      <div><div class="k">4种</div><div class="lbl">推荐策略动态融合</div></div>
+      <div><div class="k">16周</div><div class="lbl">完整工程实践周期</div></div>
+    </div>
+  </div>
+  <div class="brand-cards stagger">
+    <div class="brand-card">
+      <div>01</div>
+      <div><div class="tag">INNOVATION</div><div class="title">动态权重混合引擎</div><div class="desc">根据用户交互量自动切换 CF/CB/Pop/Rand 四者权重，从冷启动到活跃三档自适应</div></div>
+      <div class="badge">HYBRID</div>
+    </div>
+    <div class="brand-card">
+      <div>02</div>
+      <div><div class="tag">INNOVATION</div><div class="title">双端统一后端架构</div><div class="desc">Thymeleaf Web 端 + 微信小程序原生，共用一套 Spring Boot REST API 与鉴权</div></div>
+      <div class="badge">DUAL-END</div>
+    </div>
+    <div class="brand-card">
+      <div>03</div>
+      <div><div class="tag">INNOVATION</div><div class="title">可观测诊断后台</div><div class="desc">实时查看三算法独立推荐结果、权重可视化、冷启动阶段识别与干预</div></div>
+      <div class="badge">OBSERVABLE</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: T06 REFINE LIST — 国内外研究现状                     -->
+<!-- ============================================================ -->
+<section class="slide s-refine">
+  <div class="stagger">
+    <span class="kicker">02 / Related Work</span>
+    <h1 class="h-1">国内外研究现状</h1>
+    <p class="lead">三条流派：协同过滤、内容推荐、混合策略。单一算法各有缺陷，混合是当前研究必由之路。</p>
+  </div>
+  <div class="refine-list stagger">
+    <div class="refine-item"><span class="idx">UserCF</span><div><div class="h">基于用户的协同过滤</div><div class="d">皮尔逊相关系数度量用户相似度，找相似用户喜欢的物品推荐。效果好、可发现新类型，但<strong style="color:var(--coral-red);">冷启动 + 稀疏性</strong> 两大硬伤。</div></div></div>
+    <div class="refine-item"><span class="idx">ItemCF</span><div><div class="h">基于物品的协同过滤</div><div class="d">Jaccard 相似度计算物品共现概率，亚马逊首创。Item 数量稳定时效果优于 UserCF，但同样受冷启动影响。</div></div></div>
+    <div class="refine-item"><span class="idx">Content</span><div><div class="h">基于内容的推荐</div><div class="d">分析物品特征（genre × artist × album），与用户历史偏好向量做点积。<strong style="color:var(--pulse-green);">无冷启动、可解释</strong>，但易陷入同质化。</div></div></div>
+    <div class="refine-item"><span class="idx">Hybrid</span><div><div class="h">混合推荐策略</div><div class="d">线性加权、级联、多专家混合等多种融合方式。工业界 YouTube、Netflix 均采用混合架构，学术界近年研究热点。</div></div></div>
+    <div class="refine-item"><span class="idx">Gap</span><div><div class="h">本文切入点</div><div class="d">现有研究<strong style="color:var(--acid-lime);">多聚焦算法精度、缺少完整工程实践</strong>。毕设从算法 → 架构 → 双端 → 评估 → 部署全链路打通。</div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: T05 TEAM CARDS — 研究内容                             -->
+<!-- ============================================================ -->
+<section class="slide s-team">
+  <div class="stagger">
+    <span class="kicker">03 / Research Scope</span>
+    <h1 class="h-1">研究内容与目标</h1>
+    <p class="lead">一个核心引擎 + 双端前端 + 管理后台 + 可量化评估，四大模块构成完整闭环。</p>
+  </div>
+  <div class="team-cards stagger">
+    <div class="team-card">
+      <span class="idx">— 01 / ENGINE</span>
+      <div class="title">混合推荐引擎</div>
+      <div class="en-sub">Hybrid Recommender Service</div>
+      <div class="desc">UserCF + ItemCF + ContentBased 三算法并行，动态权重调度，冷启动自动降级</div>
+    </div>
+    <div class="team-card">
+      <span class="idx">— 02 / DUAL-END</span>
+      <div class="title">Web + 小程序双端</div>
+      <div class="en-sub">Thymeleaf + WeChat Mini Program</div>
+      <div class="desc">Web 端 20+ Thymeleaf 模板 + 自定义 Player 组件；小程序 6 页面原生开发</div>
+    </div>
+    <div class="team-card">
+      <span class="idx">— 03 / ADMIN</span>
+      <div class="title">推荐引擎诊断后台</div>
+      <div class="en-sub">Admin Diagnostics Panel</div>
+      <div class="desc">实时查看三算法独立结果、用户阶段判定、权重条形图可视化、全局统计</div>
+    </div>
+    <div class="team-card">
+      <span class="idx">— 04 / EVALUATION</span>
+      <div class="title">可量化评估体系</div>
+      <div class="en-sub">LOO + Precision@K + NDCG</div>
+      <div class="desc">离线评估脚本（Python）+ 43 个单元测试全绿 + 30 用户 × 678 交互对比实验</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: T24 FREE DUAL — 算法剖析                              -->
+<!-- ============================================================ -->
+<section class="slide s-free-dual">
+  <div class="free-left stagger">
+    <span class="kicker">04 / Algorithm</span>
+    <h1 class="h-1">混合算法深度剖析</h1>
+    <p class="lead">核心公式 + 动态权重三档切换 + 冷启动兜底。权重表定义在 HybridRecommenderService.java:55-67。</p>
+
+    <div class="formula-block">
+<span class="cm">// 协同过滤 · 余弦相似度</span>
+<span class="kw">double</span> sim = dotProduct / (normA * normB);
+<span class="kw">double</span> score = similarity * targetRating;
+
+<span class="cm">// 内容推荐 · 线性组合</span>
+sim(s,u) = <span class="num">0.5</span>·cos(G<sub>s</sub>,G<sub>u</sub>) + <span class="num">0.4</span>·cos(A<sub>s</sub>,A<sub>u</sub>) + <span class="num">0.1</span>·B
+
+<span class="cm">// 混合融合公式</span>
+final = α·CF<sub>norm</sub> + β·CB<sub>norm</sub> + γ·Pop + δ·Rand
+    </div>
+  </div>
+
+  <div class="free-right stagger">
+    <div class="weight-row">
+      <div class="weight-label">❄️ 冷启动 (0)</div>
+      <div class="weight-bar"><div class="weight-seg seg-pop" style="width:50%;">热门 50%</div><div class="weight-seg seg-rand" style="width:50%;">随机 50%</div></div>
+      <div class="weight-tag tag-cold">COLD</div>
+    </div>
+    <div class="weight-row">
+      <div class="weight-label">稀疏 (≤5)</div>
+      <div class="weight-bar"><div class="weight-seg seg-cf" style="width:20%;">CF</div><div class="weight-seg seg-cb" style="width:50%;">CB</div><div class="weight-seg seg-pop" style="width:20%;">Pop</div><div class="weight-seg seg-rand" style="width:10%;">Rnd</div></div>
+      <div class="weight-tag tag-sparse">SPARSE</div>
+    </div>
+    <div class="weight-row">
+      <div class="weight-label">🔥 活跃 (>5)</div>
+      <div class="weight-bar"><div class="weight-seg seg-cf" style="width:50%;">CF</div><div class="weight-seg seg-cb" style="width:20%;">CB</div><div class="weight-seg seg-pop" style="width:15%;">Pop</div><div class="weight-seg seg-rand" style="width:15%;">Rnd</div></div>
+      <div class="weight-tag tag-hot">HOT</div>
+    </div>
+
+    <div style="height:16px;"></div>
+
+    <div class="fact-card">
+      <div class="tag">MIN-MAX NORMALIZATION</div>
+      <div class="desc">CF / CB 得分先做 min-max 归一化到 [0, 1] 区间再加权，保证不同算法得分尺度可比较。</div>
+    </div>
+    <div class="fact-card">
+      <div class="tag">FALLBACK</div>
+      <div class="desc">若 CF 和 CB 均返回空列表，自动降级为热门 Top N + 随机填充，永不返回空推荐。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: SVG 架构图                                            -->
+<!-- ============================================================ -->
+<section class="slide" style="grid-template-columns:1fr 1fr;gap:36px;align-items:center;">
+  <div class="stagger">
+    <span class="kicker">05 / Architecture</span>
+    <h1 class="h-1" style="font-size:36px;">分层架构 · 双端统一后端</h1>
+    <p class="lead" style="font-size:14px;margin-top:14px;">从双端前端 → REST API → Controller → Service（含推荐引擎）→ JPA → MySQL，六层清晰分离。</p>
+
+    <div class="arch-svg-wrap">
+      <svg viewBox="0 0 540 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gLit" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e4f222" stop-opacity=".2"/><stop offset="100%" stop-color="#e4f222" stop-opacity=".05"/>
+          </linearGradient>
+          <linearGradient id="gMid" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#02b8cc" stop-opacity=".2"/><stop offset="100%" stop-color="#02b8cc" stop-opacity=".05"/>
+          </linearGradient>
+          <linearGradient id="gVio" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity=".2"/><stop offset="100%" stop-color="#6366f1" stop-opacity=".05"/>
+          </linearGradient>
+          <marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e4f222"/>
+          </marker>
+        </defs>
+
+        <!-- Layer 1: Frontends -->
+        <rect x="30" y="10" width="210" height="46" rx="8" fill="url(#gLit)" stroke="#e4f222" stroke-width=".7"/>
+        <text x="46" y="28" font-family="Inter" font-size="9" fill="#e4f222" font-weight="600" letter-spacing="2">WEB FRONTEND</text>
+        <text x="46" y="42" font-family="JetBrains Mono" font-size="8" fill="#d0d6e0">Thymeleaf · 原生 JS</text>
+
+        <rect x="300" y="10" width="210" height="46" rx="8" fill="url(#gLit)" stroke="#e4f222" stroke-width=".7"/>
+        <text x="316" y="28" font-family="Inter" font-size="9" fill="#e4f222" font-weight="600" letter-spacing="2">WECHAT MINI</text>
+        <text x="316" y="42" font-family="JetBrains Mono" font-size="8" fill="#d0d6e0">WXML / WXSS / JS</text>
+
+        <!-- Layer 2: REST API bar -->
+        <rect x="100" y="76" width="340" height="24" rx="12" fill="#161718" stroke="#e4f222" stroke-width=".7"/>
+        <text x="270" y="92" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#e4f222" font-weight="600" letter-spacing="1">REST API · /api/** · Bearer · CORS</text>
+
+        <line x1="135" y1="56" x2="135" y2="76" stroke="#e4f222" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="405" y1="56" x2="405" y2="76" stroke="#e4f222" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Layer 3: Controller -->
+        <rect x="30" y="114" width="480" height="74" rx="8" fill="url(#gMid)" stroke="#02b8cc" stroke-width=".5"/>
+        <text x="46" y="130" font-family="Inter" font-size="9" fill="#02b8cc" font-weight="600" letter-spacing="2">CONTROLLER · Spring MVC</text>
+        <rect x="46" y="138" width="88" height="20" rx="4" fill="#0f1011" stroke="#23252a"/>
+        <text x="90" y="153" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#d0d6e0">HomeCtrl</text>
+        <rect x="142" y="138" width="88" height="20" rx="4" fill="#0f1011" stroke="#23252a"/>
+        <text x="186" y="153" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#d0d6e0">SongCtrl</text>
+        <rect x="238" y="138" width="88" height="20" rx="4" fill="#0f1011" stroke="#23252a"/>
+        <text x="282" y="153" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#d0d6e0">PlaylistCtrl</text>
+        <rect x="334" y="138" width="88" height="20" rx="4" fill="rgba(228,242,34,.1)" stroke="#e4f222"/>
+        <text x="378" y="153" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#e4f222" font-weight="600">MusicApiCtrl</text>
+        <rect x="430" y="138" width="74" height="20" rx="4" fill="rgba(228,242,34,.1)" stroke="#e4f222"/>
+        <text x="467" y="153" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#e4f222" font-weight="600">AdminRec</text>
+        <rect x="46" y="162" width="88" height="20" rx="4" fill="rgba(228,242,34,.1)" stroke="#e4f222"/>
+        <text x="90" y="177" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#e4f222" font-weight="600">AuthApiCtrl</text>
+
+        <line x1="270" y1="100" x2="270" y2="114" stroke="#e4f222" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Layer 4: Service + Engine -->
+        <rect x="30" y="200" width="480" height="130" rx="8" fill="url(#gVio)" stroke="#6366f1" stroke-width=".5"/>
+        <text x="46" y="216" font-family="Inter" font-size="9" fill="#6366f1" font-weight="600" letter-spacing="2">SERVICE · 业务逻辑 + ⭐ 推荐引擎</text>
+
+        <rect x="46" y="224" width="124" height="26" rx="5" fill="#0f1011" stroke="#23252a"/>
+        <text x="108" y="241" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#d0d6e0">SongService</text>
+        <rect x="178" y="224" width="124" height="26" rx="5" fill="#0f1011" stroke="#23252a"/>
+        <text x="240" y="241" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#d0d6e0">PlaylistService</text>
+        <rect x="310" y="224" width="124" height="26" rx="5" fill="#0f1011" stroke="#23252a"/>
+        <text x="372" y="241" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#d0d6e0">UserService</text>
+
+        <rect x="46" y="260" width="444" height="60" rx="6" fill="#0f1011" stroke="#e4f222" stroke-width="1"/>
+        <text x="62" y="276" font-family="Inter" font-size="9" fill="#e4f222" font-weight="600" letter-spacing="1.5">HYBRID RECOMMENDER SERVICE</text>
+        <text x="62" y="290" font-family="JetBrains Mono" font-size="7.5" fill="#8a8f98">动态权重 · min-max 归一化 · 冷启动兜底</text>
+        <rect x="62" y="300" width="130" height="14" rx="3" fill="#08090a" stroke="#6366f1"/>
+        <text x="127" y="310" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#6366f1">CollaborativeRecommender</text>
+        <rect x="200" y="300" width="130" height="14" rx="3" fill="#08090a" stroke="#02b8cc"/>
+        <text x="265" y="310" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#02b8cc">ContentBasedRecommender</text>
+        <rect x="338" y="300" width="144" height="14" rx="3" fill="#08090a" stroke="#e4f222"/>
+        <text x="410" y="310" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#e4f222">HotPop + RandomFill</text>
+
+        <line x1="270" y1="188" x2="270" y2="200" stroke="#e4f222" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Layer 5: JPA -->
+        <rect x="150" y="348" width="240" height="26" rx="5" fill="#0f1011" stroke="#02b8cc" stroke-width=".5"/>
+        <text x="270" y="365" text-anchor="middle" font-family="Inter" font-size="9" fill="#02b8cc" font-weight="600" letter-spacing="1.5">Spring Data JPA Repository</text>
+
+        <line x1="270" y1="330" x2="270" y2="348" stroke="#02b8cc" stroke-width=".8" marker-end="url(#arr)"/>
+
+        <!-- Layer 6: MySQL cylinder -->
+        <ellipse cx="270" cy="402" rx="120" ry="9" fill="#0f1011" stroke="#27a644" stroke-width=".7"/>
+        <rect x="150" y="402" width="240" height="46" fill="#0f1011"/>
+        <line x1="150" y1="402" x2="150" y2="448" stroke="#27a644" stroke-width=".7"/>
+        <line x1="390" y1="402" x2="390" y2="448" stroke="#27a644" stroke-width=".7"/>
+        <ellipse cx="270" cy="448" rx="120" ry="9" fill="#08090a" stroke="#27a644" stroke-width=".7"/>
+        <text x="270" y="428" text-anchor="middle" font-family="Inter" font-size="12" fill="#27a644" font-weight="600" letter-spacing="2">MYSQL 8.0</text>
+        <text x="270" y="442" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#62666d">6 tables · 70 songs · 4 users · 55+ interactions</text>
+
+        <line x1="270" y1="374" x2="270" y2="402" stroke="#02b8cc" stroke-width=".8" marker-end="url(#arr)"/>
+
+        <!-- Side legend -->
+        <g transform="translate(15, 470)">
+          <rect x="0" y="0" width="115" height="120" rx="6" fill="none" stroke="#23252a" stroke-width=".5"/>
+          <text x="8" y="14" font-family="JetBrains Mono" font-size="7" fill="#8a8f98" font-weight="600">数据流 LEGEND</text>
+          <line x1="8" y1="26" x2="30" y2="26" stroke="#e4f222" stroke-width="1.2"/><text x="34" y="30" font-family="JetBrains Mono" font-size="7" fill="#8a8f98">HTTP 请求</text>
+          <line x1="8" y1="42" x2="30" y2="42" stroke="#02b8cc" stroke-width="1.2"/><text x="34" y="46" font-family="JetBrains Mono" font-size="7" fill="#8a8f98">JPA → MySQL</text>
+          <line x1="8" y1="58" x2="30" y2="58" stroke="#6366f1" stroke-width="1.2"/><text x="34" y="62" font-family="JetBrains Mono" font-size="7" fill="#8a8f98">推荐引擎内部</text>
+          <line x1="8" y1="74" x2="30" y2="74" stroke="#27a644" stroke-width="1.2"/><text x="34" y="78" font-family="JetBrains Mono" font-size="7" fill="#8a8f98">持久化层</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="stagger">
+    <h2 class="h-2" style="font-size:22px;">🛠️ 技术栈</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="fact-card"><div class="tag">BACKEND</div><div class="desc">Spring Boot 3.2.12 · Spring Security · JPA · Druid 1.2.24</div></div>
+      <div class="fact-card"><div class="tag">DATABASE</div><div class="desc">MySQL 8.0 · 6 tables · Repository 模式</div></div>
+      <div class="fact-card"><div class="tag">CACHE</div><div class="desc">Caffeine 本地缓存 · TTL 5min · max 1000</div></div>
+      <div class="fact-card"><div class="tag">FRONTEND</div><div class="desc">Thymeleaf 模板 · 原生 JS · 20+ 页面</div></div>
+      <div class="fact-card"><div class="tag">MINI PROG</div><div class="desc">微信原生 · 6 pages · 4-tabBar</div></div>
+      <div class="fact-card"><div class="tag">OBSERVE</div><div class="desc">Druid /druid/ · SpringDoc · 43 单测</div></div>
+    </div>
+
+    <h2 class="h-2" style="font-size:22px;margin-top:18px;">⚡ 性能优化</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">Gzip 压缩</span>
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">7 天强缓存</span>
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">Caffeine 缓存</span>
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">DOM 引用缓存</span>
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">CSS 变量主题</span>
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">lazy-load 图像</span>
+      <span class="tag-chip" style="background:rgba(228,242,34,.12);color:var(--acid-lime);">Thymeleaf fragments</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: T04 GRID LINES — 数据库 + API                          -->
+<!-- ============================================================ -->
+<section class="slide s-lines">
+  <div class="lines-head stagger">
+    <div>
+      <span class="kicker">06 / Database &amp; API</span>
+      <h1 class="h-1">6 表数据库 · 17 个 REST 端点</h1>
+    </div>
+    <p class="lead">Spring Data JPA Repository 模式 · ApiResponse&lt;T&gt; 统一响应 · BCrypt + JWT 鉴权</p>
+  </div>
+
+  <div class="lines-grid cols-3x2 stagger" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="line-cell">
+      <span class="num">01</span>
+      <div class="name">users</div><div class="en">用户账户 + 权限</div>
+      <div class="desc">10 字段 · id / username / password(BCrypt) / email / role</div>
+      <div class="accent">1→N playlists · 1→N interactions</div>
+    </div>
+    <div class="line-cell">
+      <span class="num">02</span>
+      <div class="name">songs</div><div class="en">歌曲元数据</div>
+      <div class="desc">12 字段 · title / artist / album / genre / cover_url</div>
+      <div class="accent">核心推荐输入表</div>
+    </div>
+    <div class="line-cell">
+      <span class="num">03</span>
+      <div class="name">playlists</div><div class="en">歌单</div>
+      <div class="desc">8 字段 · name / user_id / is_public / cover_url</div>
+      <div class="accent">N→1 users · 1→N songs</div>
+    </div>
+    <div class="line-cell">
+      <span class="num">04</span>
+      <div class="name">playlist_songs</div><div class="en">歌单-歌曲关联</div>
+      <div class="desc">6 字段 · playlist_id / song_id / sort_order</div>
+      <div class="accent">M→M 中间表 · UK 唯一约束</div>
+    </div>
+    <div class="line-cell">
+      <span class="num">05</span>
+      <div class="name">user_song_interactions</div><div class="en">推荐引擎核心输入</div>
+      <div class="desc">8 字段 · user_id / song_id / play_count / is_liked</div>
+      <div class="accent">隐式评分：play=1 · like=2</div>
+    </div>
+    <div class="line-cell">
+      <span class="num">06</span>
+      <div class="name">comments</div><div class="en">评论区</div>
+      <div class="desc">6 字段 · song_id / user_id / content / like_count</div>
+      <div class="accent">N→1 songs · N→1 users</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: T03 BRAND — 进度安排                                  -->
+<!-- ============================================================ -->
+<section class="slide s-brand">
+  <div class="brand-left stagger">
+    <span class="kicker">07 / Schedule</span>
+    <h1 class="h-1">16 周毕业设计周期</h1>
+    <div class="timeline-wrap" style="margin-top:20px;">
+      <div class="tl-item done">
+        <div class="tl-time">第 1–3 周 ✅</div>
+        <div class="tl-content">文献调研 · 开题报告撰写与答辩</div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-time">第 4–6 周 ✅</div>
+        <div class="tl-content">Spring Boot 骨架 · 6 表数据库 · Security + JPA</div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-time">第 7–9 周 ✅</div>
+        <div class="tl-content">UserCF / CB / Hybrid 混合引擎</div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-time">第 10–11 周 ✅</div>
+        <div class="tl-content">双端前端 + 管理后台 + REST API</div>
+      </div>
+      <div class="tl-item active">
+        <div class="tl-time">第 12–13 周 🔄</div>
+        <div class="tl-content">算法评估 · 功能测试 · 性能调优</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">第 14–16 周 📝</div>
+        <div class="tl-content">毕业论文 · 答辩 PPT · 系统演示</div>
+      </div>
+    </div>
+  </div>
+  <div class="brand-cards stagger">
+    <div class="brand-card">
+      <div>A1</div>
+      <div><div class="tag">BACKEND</div><div class="title">12 Java 源文件</div><div class="desc">6 Controller + 4 Service + 3 推荐引擎 + Security + JPA</div></div>
+      <div class="badge">DONE</div>
+    </div>
+    <div class="brand-card">
+      <div>A2</div>
+      <div><div class="tag">FRONTEND</div><div class="title">20+ Thymeleaf 模板</div><div class="desc">6 fragment 组件 · 自定义 Player · 3 图表（ECharts）</div></div>
+      <div class="badge">DONE</div>
+    </div>
+    <div class="brand-card">
+      <div>A3</div>
+      <div><div class="tag">MINI PROG</div><div class="title">6 页面 + 4-tabBar</div><div class="desc">原生 WXML/WXSS/JS · utils/request.js 统一封装</div></div>
+      <div class="badge">DONE</div>
+    </div>
+    <div class="brand-card">
+      <div>A4</div>
+      <div><div class="tag">TEST &amp; EVAL</div><div class="title">43 单测 · LOO 评估</div><div class="desc">JUnit 5 + Mockito · Precision@K · NDCG@K</div></div>
+      <div class="badge">DONE</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: T08 CLOSING                                         -->
+<!-- ============================================================ -->
+<section class="slide s-close">
+  <div class="close-left">
+    <div class="chrome-min"><span>OPENING DEFENSE</span><span>2026</span></div>
+    <div class="manifesto stagger">
+      <div class="meta">Q &amp; A · 欢迎提问</div>
+      <h2>让推荐更懂你。</h2>
+      <div class="sub">基于混合推荐引擎的智能音乐播放平台 · 完整工程实践</div>
+    </div>
+    <div class="sig"><span>钟靖 · 南昌应用技术师范学院</span><span>2026 · 开题答辩</span></div>
+  </div>
+  <div class="close-right">
+    <div class="chrome-min"><span>Takeaways</span><span>03 Points</span></div>
+    <div class="takeaways stagger">
+      <div class="take-item"><div class="num">01</div><div><h3>动态权重混合引擎</h3><p>解决冷启动痛点 · 三档自适应切换 · min-max 归一化融合</p></div></div>
+      <div class="take-item"><div class="num">02</div><div><h3>双端统一后端架构</h3><p>Thymeleaf + 微信小程序 · 共用一套 REST API 与鉴权</p></div></div>
+      <div class="take-item"><div class="num">03</div><div><h3>完整工程闭环</h3><p>算法 → 架构 → 前端 → 评估 → 部署，全链路打通</p></div></div>
+    </div>
+    <div class="foot">→ GitHub: github.com/zzxc33/-</div>
+  </div>
+</section>
+
+</div><!-- /canvas -->
+
+<script>
+const canvas=document.getElementById('canvas');
+const slides=document.querySelectorAll('.slide');
+const dotsWrap=document.getElementById('dots');
+const cur=document.getElementById('cur');
+const tot=document.getElementById('tot');
+
+let idx=0;
+const total=slides.length;
+tot.textContent=String(total).padStart(2,'0');
+
+for(let i=0;i<total;i++){
+  const d=document.createElement('div');
+  d.className='dot'+(i===0?' active':'');
+  d.onclick=()=>go(i);
+  dotsWrap.appendChild(d);
+}
+const dots=document.querySelectorAll('.dot');
+
+function go(n){
+  slides[idx].classList.remove('active');
+  dots[idx].classList.remove('active');
+  idx=(n+total)%total;
+  slides[idx].classList.add('active');
+  dots[idx].classList.add('active');
+  cur.textContent=String(idx+1).padStart(2,'0');
+}
+const next=()=>go(idx+1);
+const prev=()=>go(idx-1);
+
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight',' ','PageDown','ArrowDown'].includes(e.key)){e.preventDefault();next();}
+  if(['ArrowLeft','PageUp','ArrowUp'].includes(e.key)){e.preventDefault();prev();}
+  if(e.key==='Home'){e.preventDefault();go(0);}
+  if(e.key==='End'){e.preventDefault();go(total-1);}
+});
+
+let wheelBlocked=false;
+canvas.addEventListener('wheel',e=>{
+  if(wheelBlocked)return;
+  wheelBlocked=true;
+  e.deltaY>0?next():prev();
+  setTimeout(()=>wheelBlocked=false,800);
+},{passive:true});
+
+let touchY=0;
+canvas.addEventListener('touchstart',e=>{touchY=e.touches[0].clientY;},{passive:true});
+canvas.addEventListener('touchend',e=>{const dy=e.changedTouches[0].clientY-touchY;Math.abs(dy)>40?(dy<0?next():prev()):null;},{passive:true});
+
+function fit(){
+  const sw=window.innerWidth/1280,sh=window.innerHeight/720;
+  canvas.style.transform='translate(-50%,-50%) scale('+Math.min(sw,sh)+')';
+}
+fit();
+window.addEventListener('resize',fit);
+</script>
+</body>
+</html>
