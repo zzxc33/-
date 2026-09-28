@@ -1,0 +1,97 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='播放量排行榜 Top 100')}"></head>
+<body class="bg-dark">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/index}">🎵 智能音樂推薦</a>
+        <div class="d-flex gap-2">
+            <a th:href="@{/index}" class="btn btn-sm btn-outline-secondary">首頁</a>
+            <a th:href="@{/recommend/daily}" class="btn btn-sm btn-outline-warning">每日推薦</a>
+        </div>
+    </div>
+</nav>
+
+<section class="container py-4">
+    <!-- HERO -->
+    <div class="rounded-4 p-4 mb-4 text-center"
+         style="background: linear-gradient(135deg, #ef444422, #f9731622, #f59e0b22); border: 1px solid #ffffff1a;">
+        <h1 class="display-6 fw-bold text-white mb-1">🏆 播放量排行榜 Top 100</h1>
+        <p class="text-white-50 mb-0">根據真實播放數據實時統計 · 總計 <span th:text="${top100.size()}">100</span> 首熱門金曲</p>
+    </div>
+
+    <!-- 側邊欄 + 排行榜 -->
+    <div class="row g-4">
+        <!-- 側邊欄：風格分佈 -->
+        <div class="col-lg-3">
+            <div class="card bg-dark border-secondary sticky-top" style="top: 16px;">
+                <div class="card-body">
+                    <h5 class="text-white fw-bold mb-3">📊 Top 100 風格分佈</h5>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item bg-dark px-0 d-flex justify-content-between text-white border-secondary">
+                            <span class="text-white-50 small">風格</span>
+                            <span class="text-white-50 small">歌曲數</span>
+                        </div>
+                        <div th:each="entry : ${genreStat}"
+                             class="list-group-item bg-dark px-0 d-flex justify-content-between text-white border-secondary">
+                            <span th:text="${entry.key}"></span>
+                            <span class="text-white-50 small" th:text="${entry.value}"></span>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-white-50 small">
+                        💡 點擊歌曲可進入詳情頁面
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排行榜主體 -->
+        <div class="col-lg-9">
+            <div class="list-group gap-1">
+                <div th:each="song,stat : ${top100}"
+                     class="list-group-item list-group-item-action bg-dark border-secondary text-white d-flex align-items-center gap-3 hover-row"
+                     style="border-radius: 8px; transition: .15s;">
+                    <!-- 排名 -->
+                    <span class="fw-bold text-center"
+                          style="width: 36px; font-size: 20px;"
+                          th:style="|color: ${stat.index} < 3 ? '#fbbf24' : '#6b7280'|">
+                        <span th:text="${stat.count}">1</span>
+                    </span>
+                    <!-- 封面 -->
+                    <a th:href="@{/song/{id}(id=${song.id})}" class="text-decoration-none">
+                        <img th:if="${song.coverUrl}" th:src="${song.coverUrl}"
+                             style="width:54px;height:54px;object-fit:cover;border-radius:6px;" alt="">
+                        <div th:if="${!song.coverUrl}"
+                             class="d-flex align-items-center justify-content-center bg-secondary text-white"
+                             style="width:54px;height:54px;border-radius:6px;font-size:20px;">🎵</div>
+                    </a>
+                    <!-- 歌曲信息 -->
+                    <div class="flex-grow-1 min-w-0">
+                        <a th:href="@{/song/{id}(id=${song.id})}"
+                           class="text-decoration-none text-white fw-semibold text-truncate d-block hover:text-warning">
+                            <span th:text="${song.title}"></span>
+                        </a>
+                        <a th:href="@{/artist/{name}(name=${song.artist})}"
+                           class="text-decoration-none text-white-50 small text-truncate d-block hover:text-info"
+                           th:text="${song.artist}"></a>
+                    </div>
+                    <!-- 數據列 -->
+                    <span class="text-white-50 small d-none d-md-inline" th:text="${song.genre}">流行</span>
+                    <span class="text-white-50 small text-end" style="min-width:70px;">
+                        ▶ <span th:text="${song.playCount}">0</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .bg-dark { background: #121212 !important; }
+    body { background: #0a0a0a; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .hover-row:hover { background: rgba(245,158,11,.08) !important; }
+    /* 前三名特殊樣式 */
+    .top-1 { border-color: #fbbf24 !important; }
+</style>
+</body>
+</html>

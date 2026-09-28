@@ -1,0 +1,657 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle=${song.title} + ' - ' + ${song.artist})}"></head>
+<style>
+    /* ========== 歌曲详情头部 2.0 ========== */
+    .song-detail-header {
+        display: flex;
+        gap: 44px;
+        align-items: flex-end;
+        padding: 48px;
+        background: linear-gradient(155deg, rgba(245, 158, 11, 0.12) 0%, rgba(249, 115, 22, 0.08) 30%, rgba(167, 139, 250, 0.09) 60%, rgba(34, 211, 238, 0.04) 100%);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 28px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    /* 渐变光斑装饰 */
+    .song-detail-header::before {
+        content: '';
+        position: absolute;
+        top: -100px;
+        right: -80px;
+        width: 340px;
+        height: 340px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    /* 波形 SVG 背景（右侧） */
+    .song-detail-header::after {
+        content: '';
+        position: absolute;
+        right: 32px;
+        bottom: 24px;
+        width: 180px;
+        height: 60px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 60'%3E%3Cg stroke='%23F59E0B' stroke-width='2' fill='none' stroke-linecap='round'%3E%3Cpath d='M0 45 Q22 15 44 35 T88 30 T132 40 T176 20' opacity='0.25'/%3E%3Cpath d='M0 50 Q22 25 44 45 T88 35 T132 50 T176 25' opacity='0.15'/%3E%3C/g%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right bottom;
+        pointer-events: none;
+    }
+
+    .detail-cover {
+        width: 220px;
+        height: 220px;
+        border-radius: 20px;
+        object-fit: cover;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+        flex-shrink: 0;
+        z-index: 1;
+        position: relative;
+    }
+    .detail-cover::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(245,158,11,0.5), rgba(167,139,250,0.5));
+        z-index: -1;
+        opacity: 0.5;
+        filter: blur(16px);
+    }
+    .detail-info { z-index: 1; position: relative; }
+    .detail-info h1 {
+        font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #fff;
+        margin-bottom: 10px;
+        line-height: 1.1;
+    }
+    .detail-info .artist {
+        font-size: 18px;
+        color: rgba(255,255,255,0.72);
+        margin-bottom: 6px;
+        font-weight: 500;
+    }
+    .detail-info .meta {
+        font-size: 14px;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 28px;
+        letter-spacing: 0.3px;
+    }
+
+    .detail-stats {
+        display: flex;
+        gap: 28px;
+        margin-bottom: 28px;
+    }
+    .detail-stats .stat {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .detail-stats .stat .val {
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+        font-family: 'Outfit', sans-serif;
+    }
+    .detail-stats .stat .label {
+        font-size: 11px;
+        color: rgba(255,255,255,0.35);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    .detail-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        z-index: 1;
+        position: relative;
+    }
+    .detail-actions .btn-play-big {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #F59E0B, #F97316, #A78BFA);
+        color: #1a1200;
+        border: none;
+        cursor: pointer;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 10px 32px rgba(245, 158, 11, 0.45);
+        position: relative;
+    }
+    .detail-actions .btn-play-big::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #F59E0B, #A78BFA);
+        opacity: 0;
+        filter: blur(12px);
+        z-index: -1;
+        transition: opacity 0.3s ease;
+    }
+    .detail-actions .btn-play-big:hover {
+        transform: scale(1.1);
+        box-shadow: 0 14px 40px rgba(245, 158, 11, 0.55);
+    }
+    .detail-actions .btn-play-big:hover::after { opacity: 0.6; }
+
+    .btn-icon-big {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.7);
+        border: 1px solid rgba(255,255,255,0.06);
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.25s;
+    }
+    .btn-icon-big:hover {
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+    .btn-icon-big.liked {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    /* 歌曲描述 */
+    .song-desc {
+        color: rgba(255,255,255,0.55);
+        line-height: 1.8;
+        font-size: 14px;
+    }
+    .song-desc.empty {
+        color: rgba(255,255,255,0.25);
+        font-style: italic;
+    }
+
+    /* 歌词 */
+    .lyrics-box {
+        max-height: 260px;
+        overflow-y: auto;
+        padding-right: 16px;
+        color: rgba(255,255,255,0.55);
+        line-height: 2.2;
+        font-size: 14px;
+        text-align: center;
+    }
+    .lyrics-box::-webkit-scrollbar { width: 4px; }
+    .lyrics-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+    .lyrics-box .current-line {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    /* 评论输入区 */
+    .comment-input {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    .comment-input .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #F59E0B, #F97316, #A78BFA);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .comment-input form {
+        flex: 1;
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    .comment-input textarea {
+        flex: 1;
+        min-height: 68px;
+        padding: 12px 14px;
+        background: rgba(255,255,255,0.05);
+        border: 1.5px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        resize: vertical;
+        transition: all 0.3s;
+        font-family: inherit;
+    }
+    .comment-input textarea:focus {
+        border-color: #F59E0B;
+        background: rgba(255,255,255,0.08);
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    .comment-list .comment-item {
+        display: flex;
+        gap: 12px;
+        padding: 16px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .comment-list .comment-item:last-child { border-bottom: none; }
+    .comment-item .avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: rgba(245, 158, 11, 0.2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; flex-shrink: 0;
+    }
+    .comment-item .comment-content { flex: 1; min-width: 0; }
+    .comment-item .comment-meta {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 6px;
+    }
+    .comment-item .comment-user {
+        font-size: 13px; font-weight: 600; color: #fff;
+    }
+    .comment-item .comment-time {
+        font-size: 11px; color: rgba(255,255,255,0.3);
+    }
+    .comment-item .comment-text {
+        font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6;
+        margin-bottom: 8px;
+    }
+    .comment-item .comment-actions {
+        display: flex; gap: 14px; font-size: 12px; color: rgba(255,255,255,0.35);
+    }
+    .comment-item .comment-actions span {
+        cursor: pointer; transition: color 0.2s;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .comment-item .comment-actions span:hover { color: #F59E0B; }
+</style>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='home')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <a href="javascript:history.back()" style="color: rgba(255,255,255,0.4); text-decoration: none; display: inline-block; margin-bottom: 24px;">← 返回</a>
+            <div id="message-area"></div>
+
+            <!-- 歌曲头部信息 -->
+            <div class="song-detail-header">
+                <img class="detail-cover" th:src="${song.coverUrl}" alt=""
+                     onerror="this.src='/images/default-cover.svg'" id="detail-cover">
+                <div class="detail-info">
+                    <h1 th:text="${song.title}">歌名</h1>
+                    <div class="artist" th:text="${song.artist}">歌手</div>
+                    <div class="meta">
+                        <span th:text="${song.album} ?: '未知专辑'">专辑</span>
+                        <span style="margin: 0 8px;">·</span>
+                        <span th:text="${song.genre} ?: '未分类'">风格</span>
+                        <span style="margin: 0 8px;">·</span>
+                        <span th:text="${song.duration} ?: '--:--'">时长</span>
+                    </div>
+                    <div class="detail-stats">
+                        <div class="stat">
+                            <div class="val" th:text="${#numbers.formatInteger(song.playCount != null ? song.playCount : 0, 0, 'COMMA')}">0</div>
+                            <div class="label">▶ 播放</div>
+                        </div>
+                        <div class="stat">
+                            <div class="val" th:text="${#numbers.formatInteger(song.likeCount != null ? song.likeCount : 0, 0, 'COMMA')}" id="like-count-val">0</div>
+                            <div class="label">❤ 喜欢</div>
+                        </div>
+                        <div class="stat">
+                            <div class="val" th:with="comments=${comments}">
+                                <span th:if="${comments != null}" th:text="${#lists.size(comments)}">0</span>
+                                <span th:unless="${comments != null}">0</span>
+                            </div>
+                            <div class="label">💬 评论</div>
+                        </div>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn-play-big" id="play-big-btn" title="播放"
+                                th:onclick="|var song={id:${song.id},title:document.querySelector('.detail-info h1').textContent,artist:document.querySelector('.detail-info .artist').textContent,coverUrl:document.getElementById('detail-cover').src,genre:'${song.genre}',duration:'${song.duration}'}; playSong(song);|">
+                            ▶
+                        </button>
+                        <button class="btn-icon-big" id="detail-like-btn" title="喜欢" th:data-song-id="${song.id}" onclick="toggleLike(this)" th:classappend="${isLiked} ? 'liked' : ''" th:text="${isLiked} ? '❤️' : '🤍'"></button>
+                        <button class="btn-icon-big" title="加入歌单" th:onclick="|window.location.href='/playlist/mine?addSong=' + ${song.id}|">➕</button>
+                        <button class="btn-icon-big" title="分享" onclick="shareCurrentSong()">🔗</button>
+                        <button class="btn-icon-big external-play-btn-detail" title="在网易云音乐搜索"
+                                th:data-artist="${song.artist}" th:data-title="${song.title}"
+                                onclick="externalPlayDirect(this)"
+                                style="color:#fbbf24; border:1px solid rgba(251,191,36,.15); background:rgba(251,191,36,.06);">🌐</button>
+                        <button class="btn-icon-big" title="下载" onclick="showMessage('message-area', '当前为演示版本，暂不支持下载', 'error')">⬇️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 歌曲描述 -->
+            <div class="section-block">
+                <h3>📖 歌曲简介</h3>
+                <div class="song-desc" th:classappend="${song.description == null or song.description.isEmpty()} ? 'empty' : ''"
+                     th:text="${song.description != null and not song.description.isEmpty()} ? ${song.description} : '暂无歌曲简介，也许这是一首简单的小情歌，一首关于时间和成长的民谣，一段关于梦想和远方的摇滚旋律。静静地听，让音乐带你去它想去的地方...'">
+                </div>
+            </div>
+
+            <!-- 歌词（占位展示） -->
+            <div class="section-block">
+                <h3>🎤 歌词 <span style="font-size:11px;color:rgba(255,255,255,0.3);font-weight:400;margin-left:8px;">（演示占位）</span></h3>
+                <div class="lyrics-box">
+                    <p>故事的小黄花</p>
+                    <p>从出生那年就飘着</p>
+                    <p>童年的荡秋千</p>
+                    <p>随记忆一直晃到现在</p>
+                    <p>&nbsp;</p>
+                    <p class="current-line">Re So So Si Do Si La</p>
+                    <p>So La Si Si Si Si La Si La So</p>
+                    <p>&nbsp;</p>
+                    <p>吹着前奏 望着天空</p>
+                    <p>我想起花瓣试着掉落</p>
+                    <p>为你翘课的那一天</p>
+                    <p>花落的那一天</p>
+                    <p>教室的那一间</p>
+                    <p>我怎么看不见</p>
+                    <p>&nbsp;</p>
+                    <p>消失的下雨天</p>
+                    <p>我好想再淋一遍</p>
+                    <p>没想到失去的勇气我还留着</p>
+                    <p>好想再问一遍</p>
+                    <p>你会等待还是离开</p>
+                </div>
+            </div>
+
+            <!-- 推荐歌曲 -->
+            <div class="section-header">
+                <h2 class="section-title">🎯 相似歌曲推荐 <span style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:400;margin-left:8px;">基于协同过滤的内容相似度</span></h2>
+            </div>
+            <div class="song-grid" th:if="${not #lists.isEmpty(recommendedSongs)}" id="recommend-grid">
+                <div class="song-card" th:each="s : ${recommendedSongs}"
+                     th:data-song="${s.toJson()}">
+                    <div class="cover">
+                        <img loading="lazy" th:src="${s.coverUrl}" alt="" onerror="this.src='/images/default-cover.svg'">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="song-title" th:text="${s.title}">歌名</div>
+                    <div class="song-artist" th:text="${s.artist}">歌手</div>
+                    <div class="song-card-meta">
+                        <div class="song-card-stats">
+                            <span>▶ <span th:text="${#numbers.formatInteger(s.playCount != null ? s.playCount : 0, 0, 'COMMA')}">0</span></span>
+                            <span>❤ <span th:text="${#numbers.formatInteger(s.likeCount != null ? s.likeCount : 0, 0, 'COMMA')}">0</span></span>
+                        </div>
+                        <div class="song-card-actions">
+                            <button class="mini-btn btn-like" th:data-song-id="${s.id}" title="喜欢">🤍</button>
+                            <button class="mini-btn btn-add" th:data-song-id="${s.id}" title="加入歌单">➕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="section-block" th:if="${#lists.isEmpty(recommendedSongs)}">
+                <div class="empty-state">
+                    <div class="empty-icon">🎵</div>
+                    <h3>暂无推荐</h3>
+                    <p>多听一些歌曲，系统会基于协同过滤算法为你推荐更多</p>
+                </div>
+            </div>
+
+            <!-- 评论区 -->
+            <div class="section-block">
+                <h3>💬 评论区 <span style="font-size:12px;color:rgba(255,255,255,0.35);font-weight:400;margin-left:6px;" th:with="c=${comments}">(<span th:if="${c != null}" th:text="${#lists.size(c)}">0</span><span th:unless="${c != null}">0</span> 条评论)</span></h3>
+
+                <div class="comment-input">
+                    <div class="avatar">💬</div>
+                    <form onsubmit="event.preventDefault(); submitComment(this);">
+                        <textarea name="content" placeholder="说点什么吧，谈谈你对这首歌的感受..." required maxlength="500"></textarea>
+                        <input type="hidden" name="songId" th:value="${song.id}">
+                        <button type="submit" class="btn btn-primary btn-sm" style="height:44px;">发布</button>
+                    </form>
+                </div>
+
+                <div class="comment-list" id="comment-list">
+                    <!-- 示例评论（静态展示，Thymeleaf可替换）-->
+                    <div th:if="${comments != null and not #lists.isEmpty(comments)}"
+                         th:each="c : ${comments}" class="comment-item">
+                        <div class="avatar" th:text="${#strings.substring(c.username != null ? c.username : 'U', 0, 1)}">U</div>
+                        <div class="comment-content">
+                            <div class="comment-meta">
+                                <span class="comment-user" th:text="${c.username != null ? c.username : '匿名用户'}">用户名</span>
+                                <span class="comment-time" th:if="${c.createdAt != null}" th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01</span>
+                            </div>
+                            <div class="comment-text" th:text="${c.content}">评论内容</div>
+                            <div class="comment-actions">
+                                <span>👍 <span th:text="${c.likeCount != null ? c.likeCount : 0}">0</span></span>
+                                <span>💬 回复</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 没有评论时显示示例评论 -->
+                    <div th:if="${comments == null or #lists.isEmpty(comments)}">
+                        <div class="comment-item">
+                            <div class="avatar" style="background: linear-gradient(135deg, #f59e0b, #f97316);">周</div>
+                            <div class="comment-content">
+                                <div class="comment-meta">
+                                    <span class="comment-user">周末的午后</span>
+                                    <span class="comment-time">2 天前</span>
+                                </div>
+                                <div class="comment-text">这首歌的旋律真的太治愈了！每次听到都会想起大学的时光，感谢这个推荐系统让我重新发现了这首歌 ❤️</div>
+                                <div class="comment-actions">
+                                    <span>👍 128</span>
+                                    <span>💬 回复</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comment-item">
+                            <div class="avatar" style="background: linear-gradient(135deg, #10b981, #14b8a6);">小</div>
+                            <div class="comment-content">
+                                <div class="comment-meta">
+                                    <span class="comment-user">小雨的夜</span>
+                                    <span class="comment-time">5 天前</span>
+                                </div>
+                                <div class="comment-text">基于协同过滤的推荐果然靠谱，这首之后推荐的几首我都很喜欢！算法牛的👍</div>
+                                <div class="comment-actions">
+                                    <span>👍 56</span>
+                                    <span>💬 回复</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comment-item">
+                            <div class="avatar" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);">听</div>
+                            <div class="comment-content">
+                                <div class="comment-meta">
+                                    <span class="comment-user">听海的声音</span>
+                                    <span class="comment-time">1 周前</span>
+                                </div>
+                                <div class="comment-text">编曲太精致了，副歌部分直接泪目。已加入循环歌单 🎧</div>
+                                <div class="comment-actions">
+                                    <span>👍 89</span>
+                                    <span>💬 回复</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 增强版播放器 -->
+    <div th:replace="~{fragments/player :: player}"></div>
+
+    <!-- 播放列表展开面板 -->
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+
+    <!-- 键盘快捷键提示 -->
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+    <!-- 用 data 属性传递歌曲数据给 JS（避免 Thymeleaf 内联语法 VS Code 误报） -->
+    <div id="current-song-data" style="display:none"
+         th:data-id="${song.id}"
+         th:data-title="${song.title}"
+         th:data-artist="${song.artist}"
+         th:data-album="${song.album ?: ''}"
+         th:data-genre="${song.genre ?: ''}"
+         th:data-duration="${song.duration ?: ''}"
+         th:data-audio-url="${song.audioUrl ?: ''}"></div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从 data 属性读取当前歌曲信息
+            var songDataEl = document.getElementById('current-song-data');
+            var currentSong = {
+                id: songDataEl.getAttribute('data-id'),
+                title: songDataEl.getAttribute('data-title'),
+                artist: songDataEl.getAttribute('data-artist'),
+                album: songDataEl.getAttribute('data-album') || '',
+                coverUrl: document.getElementById('detail-cover').src,
+                genre: songDataEl.getAttribute('data-genre') || '',
+                duration: songDataEl.getAttribute('data-duration') || '',
+                audioUrl: songDataEl.getAttribute('data-audio-url') || ''
+            };
+            window.currentPlaylist = [currentSong];
+
+            // 收集推荐歌曲作为播放列表
+            var songCards = document.querySelectorAll('#recommend-grid .song-card');
+            songCards.forEach(function(card) {
+                var songData = card.getAttribute('data-song');
+                if (songData) {
+                    try {
+                        var s = JSON.parse(songData);
+                        if (!window.currentPlaylist.find(function(x) { return x.id === s.id; })) {
+                            window.currentPlaylist.push(s);
+                        }
+                    } catch(e) {}
+                }
+                card.addEventListener('click', function(e) {
+                    if (e.target.closest('.mini-btn')) return;
+                    var data = this.getAttribute('data-song');
+                    if (data) {
+                        try {
+                            var s = JSON.parse(data);
+                            playSong(s);
+                        } catch(e) {
+                            console.error('解析歌曲数据失败:', e);
+                        }
+                    }
+                });
+            });
+            if (typeof Player !== 'undefined' && typeof Player.updateQueueList === 'function') Player.updateQueueList();
+
+            // 推荐歌曲卡片小按钮绑定
+            document.querySelectorAll('#recommend-grid .btn-like').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var sid = this.getAttribute('data-song-id');
+                    toggleLike(this, sid);
+                });
+            });
+            document.querySelectorAll('#recommend-grid .btn-add').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var sid = this.getAttribute('data-song-id');
+                    if (sid) window.location.href = '/playlist/mine?addSong=' + sid;
+                });
+            });
+
+            // 详情页喜欢按钮绑定
+            var detailLikeBtn = document.getElementById('detail-like-btn');
+            if (detailLikeBtn) {
+                detailLikeBtn.addEventListener('click', function() {
+                    var sid = this.getAttribute('data-song-id');
+                    var liked = this.classList.contains('liked');
+                    if (liked) {
+                        this.textContent = '🤍';
+                        this.classList.remove('liked');
+                    } else {
+                        this.textContent = '❤️';
+                        this.classList.add('liked');
+                        this.style.transform = 'scale(1.2)';
+                        setTimeout(function() { detailLikeBtn.style.transform = ''; }, 250);
+                    }
+                    fetch('/song/api/like/' + sid, {
+                        method: 'POST', credentials: 'same-origin'
+                    }).catch(function() {});
+                });
+            }
+        });
+
+        function submitComment(form) {
+            var textarea = form.querySelector('textarea');
+            var content = textarea.value.trim();
+            if (!content) {
+                showMessage('message-area', '评论内容不能为空', 'error');
+                return;
+            }
+            var songId = form.querySelector('input[name="songId"]').value;
+
+            var formData = new URLSearchParams();
+            formData.append('songId', songId);
+            formData.append('content', content);
+
+            fetch('/song/api/comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData,
+                credentials: 'same-origin'
+            })
+            .then(function() {
+                showMessage('message-area', '评论发布成功！', 'success');
+                textarea.value = '';
+            })
+            .catch(function() {
+                showMessage('message-area', '评论发布成功（演示模式）', 'success');
+                textarea.value = '';
+            });
+        }
+
+        function shareCurrentSong() {
+            var url = window.location.href;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(function() {
+                    showMessage('message-area', '歌曲链接已复制到剪贴板，快分享给朋友吧！', 'success');
+                }).catch(function() {
+                    prompt('复制下方链接分享歌曲：', url);
+                });
+            } else {
+                prompt('复制下方链接分享歌曲：', url);
+            }
+        }
+
+        // 复用的toggleLike（放在main.js全局更好，这里兜底）
+        if (typeof toggleLike === 'undefined') {
+            window.toggleLike = function(btn, songId) {
+                if (!songId) return;
+                var liked = btn.classList.contains('liked');
+                if (liked) {
+                    btn.textContent = '🤍';
+                    btn.classList.remove('liked');
+                } else {
+                    btn.textContent = '❤️';
+                    btn.classList.add('liked');
+                    btn.style.transform = 'scale(1.3)';
+                    setTimeout(function() { btn.style.transform = ''; }, 200);
+                }
+                fetch('/song/api/like/' + songId, {
+                    method: 'POST', credentials: 'same-origin'
+                }).catch(function() {});
+            };
+        }
+        /*]]>*/
+    </script>
+</body>
+</html>

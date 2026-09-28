@@ -1,0 +1,112 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='為你每日推薦')}"></head>
+<body class="bg-dark">
+
+<!-- ========== 頂部導航 ========== -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/index}">🎵 智能音樂推薦</a>
+        <div class="d-flex align-items-center gap-2">
+            <a th:href="@{/index}" class="btn btn-sm btn-outline-secondary">首頁</a>
+            <a th:href="@{/ranking}" class="btn btn-sm btn-outline-warning">排行榜</a>
+            <a th:href="@{/}" class="btn btn-sm btn-primary" th:if="${isLoggedIn}">個人中心</a>
+            <a th:href="@{/login}" class="btn btn-sm btn-success" th:if="${!isLoggedIn}">登錄</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ========== HERO ========== -->
+<section class="container py-5">
+    <div class="daily-hero rounded-4 p-5 mb-4"
+         style="background: linear-gradient(135deg, #f59e0b22 0%, #f9731622 40%, #a78bfa22 100%); border: 1px solid #ffffff1a;">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <p class="text-warning-emphasis mb-1 fw-semibold">✨ 今日推薦 · <span th:text="${today}"></span> <span th:text="${weekday}"></span></p>
+                <h1 class="display-5 fw-bold text-white mb-2" th:text="${greeting}"></h1>
+                <p class="text-white-50 mb-0">
+                    混合推薦引擎（協同過濾 + 內容推薦 + 動態權重）為你精心挑選
+                </p>
+            </div>
+            <div class="text-end text-white-50 small">
+                <div>個性化推薦引擎 v1.0</div>
+                <div th:if="${isLoggedIn}" class="text-success">● 已啟用個性化模式</div>
+                <div th:if="${!isLoggedIn}" class="text-muted">○ 冷啟動模式（熱門+隨機）</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 推薦歌曲網格 ========== -->
+    <h2 class="h4 fw-bold text-white mb-3">🎧 今日為你挑選</h2>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3 mb-5">
+        <div class="col" th:each="song : ${dailySongs}">
+            <div class="card h-100 bg-dark border-secondary hover-lift" style="transition: transform .2s;">
+                <a th:href="@{/song/{id}(id=${song.id})}" class="text-decoration-none">
+                    <img th:if="${song.coverUrl}" th:src="${song.coverUrl}" class="card-img-top"
+                         style="aspect-ratio:1/1; object-fit:cover;" alt="cover">
+                    <div th:if="${!song.coverUrl}"
+                         class="d-flex align-items-center justify-content-center bg-secondary text-white display-6"
+                         style="aspect-ratio:1/1;">🎵</div>
+                    <div class="card-body p-2">
+                        <h6 class="card-title text-white m-0 text-truncate" th:text="${song.title}"></h6>
+                        <a th:href="@{/artist/{name}(name=${song.artist})}"
+                           class="text-decoration-none text-white-50 small text-truncate d-block hover:text-info"
+                           th:text="${song.artist}"></a>
+                    </div>
+                </a>
+                <div class="card-footer bg-dark border-secondary p-2 small text-white-50">
+                    ▶ <span th:text="${song.playCount}">0</span>  ·  ♥ <span th:text="${song.likeCount}">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 今日熱門 Top 5 ========== -->
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <h2 class="h4 fw-bold text-white mb-3">🔥 今日熱門 Top 5</h2>
+            <div class="list-group gap-2">
+                <a th:each="song : ${hotTop5}" th:href="@{/song/{id}(id=${song.id})}"
+                   class="list-group-item list-group-item-action bg-dark border-secondary text-white d-flex align-items-center gap-3 hover-bg-warning-subtle">
+                    <span class="badge rounded-pill text-white fw-bold fs-6"
+                          th:style="|background: ${songStat.index} == 0 ? '#ef4444' : ${songStat.index} == 1 ? '#f97316' : ${songStat.index} == 2 ? '#f59e0b' : '#6b7280'|">
+                        <span th:each="songStat : ${#numbers.sequence(0, songStat.index)}" th:if="${false}"></span>
+                        <span th:text="${hotTop5.indexOf(song) + 1}">1</span>
+                    </span>
+                    <img th:if="${song.coverUrl}" th:src="${song.coverUrl}"
+                         style="width:48px;height:48px;object-fit:cover;border-radius:6px;" alt="">
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold" th:text="${song.title}"></div>
+                        <div class="small text-white-50" th:text="${song.artist}"></div>
+                    </div>
+                    <span class="small text-white-50">▶ <span th:text="${song.playCount}"></span></span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ========== 熱門歌單 ========== -->
+        <div class="col-lg-5">
+            <h2 class="h4 fw-bold text-white mb-3">📋 推薦歌單</h2>
+            <div class="row g-2">
+                <div class="col-6" th:each="pl : ${hotPlaylists}">
+                    <a th:href="@{/playlist/{id}(id=${pl.id})}" class="text-decoration-none">
+                        <div class="card bg-dark border-secondary h-100 p-3 hover-lift" style="transition:.2s;">
+                            <div class="text-white fw-semibold small text-truncate" th:text="${pl.name}"></div>
+                            <div class="text-white-50 small mt-1">🎵 <span th:text="${pl.songCount}">0</span> 首</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(245,158,11,.15); }
+    .hover-bg-warning-subtle:hover { background: rgba(245,158,11,.08) !important; }
+    .text-warning-emphasis { color: #fbbf24 !important; }
+    .bg-dark { background: #121212 !important; }
+    body { background: #0a0a0a; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+</style>
+
+</body>
+</html>

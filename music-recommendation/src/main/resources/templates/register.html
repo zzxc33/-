@@ -1,0 +1,409 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 智能音乐推荐与播放平台</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/login.css">
+    <style>
+        /* 注册页面专属样式 */
+        .register-card {
+            min-height: 620px;
+        }
+        .register-btn {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+        .register-btn:hover {
+            box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4);
+        }
+        .register-brand {
+            background: linear-gradient(160deg, rgba(5, 150, 105, 0.3), rgba(16, 185, 129, 0.2));
+        }
+        .register-brand .brand-icon {
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 10px 30px rgba(5, 150, 105, 0.4);
+        }
+        .register-link a {
+            color: #10b981;
+        }
+        .register-link a:hover {
+            color: #34d399;
+        }
+        .input-wrapper input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+        .form-header .register-subtitle {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+        }
+        .password-strength {
+            margin-top: 6px;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .password-strength .strength-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .password-strength .strength-bar .fill {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+        }
+        .password-strength .strength-text {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            min-width: 45px;
+            text-align: right;
+        }
+        .agreement {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .agreement input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .agreement {
+            cursor: pointer;
+        }
+        .agreement .checkmark {
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin-top: 1px;
+        }
+        .agreement input:checked + .checkmark {
+            background: #10b981;
+            border-color: #10b981;
+        }
+        .agreement input:checked + .checkmark::after {
+            content: '✓';
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .agreement a {
+            color: #10b981;
+            text-decoration: none;
+        }
+        .agreement a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== 背景动画 ====== -->
+    <div class="background-animation"></div>
+    <div class="music-notes"></div>
+
+    <!-- ====== 波形背景 ====== -->
+    <div class="wave-bg">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="rgba(5, 150, 105, 0.08)" d="M0,160 C320,280 480,80 720,160 C960,240 1120,80 1440,160 L1440,320 L0,320 Z">
+                <animate attributeName="d" dur="12s" repeatCount="indefinite"
+                    values="M0,160 C320,280 480,80 720,160 C960,240 1120,80 1440,160 L1440,320 L0,320 Z;
+                            M0,200 C320,80 480,240 720,120 C960,0 1120,200 1440,120 L1440,320 L0,320 Z;
+                            M0,120 C320,240 480,40 720,200 C960,360 1120,120 1440,200 L1440,320 L0,320 Z;
+                            M0,160 C320,280 480,80 720,160 C960,240 1120,80 1440,160 L1440,320 L0,320 Z">
+                </animate>
+            </path>
+        </svg>
+    </div>
+
+    <!-- ====== 注册容器 ====== -->
+    <div class="login-container">
+        <div class="login-card register-card">
+
+            <!-- 左侧品牌区 -->
+            <div class="login-brand register-brand">
+                <div class="brand-icon">🎧</div>
+                <h1 class="brand-title">加入我们</h1>
+                <p class="brand-subtitle">注册成为会员，享受AI智能推荐的音乐盛宴</p>
+                <div class="brand-features">
+                    <div class="brand-feature-item">
+                        <span class="feature-icon">🎯</span>
+                        <span>个性化推荐，发现好音乐</span>
+                    </div>
+                    <div class="brand-feature-item">
+                        <span class="feature-icon">📚</span>
+                        <span>创建专属歌单，收藏喜爱</span>
+                    </div>
+                    <div class="brand-feature-item">
+                        <span class="feature-icon">🌟</span>
+                        <span>每日推荐，永不重复</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧注册表单 -->
+            <div class="login-form-section">
+                <div class="form-header">
+                    <h2>创建账号</h2>
+                    <p>只需几步，开启你的音乐之旅</p>
+                </div>
+
+                <!-- 错误提示 -->
+                <div id="formError" class="error-message"></div>
+                <div id="formSuccess" class="success-message"></div>
+
+                <!-- 注册表单 -->
+                <form id="registerForm">
+                    <!-- 用户名 -->
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="username" name="username"
+                                   placeholder="请输入用户名" autocomplete="username"
+                                   maxlength="50" required>
+                        </div>
+                    </div>
+
+                    <!-- 邮箱 -->
+                    <div class="form-group">
+                        <label for="email">邮箱</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">📧</span>
+                            <input type="email" id="email" name="email"
+                                   placeholder="请输入邮箱地址" autocomplete="email"
+                                   maxlength="100" required>
+                        </div>
+                    </div>
+
+                    <!-- 密码 -->
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="password" name="password"
+                                   placeholder="请输入密码（至少6位）" autocomplete="new-password"
+                                   maxlength="100" required>
+                            <button type="button" class="toggle-password" tabindex="-1">👁️</button>
+                        </div>
+                        <!-- 密码强度 -->
+                        <div class="password-strength">
+                            <div class="strength-bar">
+                                <div class="fill" id="strengthFill"></div>
+                            </div>
+                            <span class="strength-text" id="strengthText">弱</span>
+                        </div>
+                    </div>
+
+                    <!-- 确认密码 -->
+                    <div class="form-group">
+                        <label for="confirmPassword">确认密码</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔐</span>
+                            <input type="password" id="confirmPassword" name="confirmPassword"
+                                   placeholder="请再次输入密码" autocomplete="new-password"
+                                   maxlength="100" required>
+                            <button type="button" class="toggle-password" tabindex="-1">👁️</button>
+                        </div>
+                    </div>
+
+                    <!-- 验证码 -->
+                    <div class="form-group">
+                        <label for="captcha">验证码</label>
+                        <div class="captcha-wrapper">
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔑</span>
+                                <input type="text" id="captcha" name="captcha"
+                                       placeholder="请输入验证码" autocomplete="off"
+                                       maxlength="4" required>
+                            </div>
+                            <img id="captchaImg" class="captcha-image" src="/captcha" alt="验证码" title="点击刷新验证码">
+                        </div>
+                    </div>
+
+                    <!-- 用户协议 -->
+                    <label class="agreement">
+                        <input type="checkbox" id="agree">
+                        <span class="checkmark"></span>
+                        <span>我已阅读并同意 <a href="#" onclick="event.stopPropagation()">用户协议</a> 和 <a href="#" onclick="event.stopPropagation()">隐私政策</a></span>
+                    </label>
+
+                    <!-- 注册按钮 -->
+                    <button type="submit" id="registerBtn" class="login-btn register-btn">
+                        <span class="btn-text">注 册</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+
+                <!-- 登录链接 -->
+                <div class="register-link">
+                    已有账号？
+                    <a th:href="@{/login}">立即登录</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ====== JavaScript ====== -->
+    <script src="/js/login.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // 密码强度检测
+            var passwordInput = document.getElementById('password');
+            var strengthFill = document.getElementById('strengthFill');
+            var strengthText = document.getElementById('strengthText');
+
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function () {
+                    var val = this.value;
+                    var strength = 0;
+
+                    if (val.length >= 6) strength += 1;
+                    if (val.length >= 10) strength += 1;
+                    if (/[a-z]/.test(val) && /[A-Z]/.test(val)) strength += 1;
+                    if (/\d/.test(val)) strength += 1;
+                    if (/[^a-zA-Z0-9]/.test(val)) strength += 1;
+
+                    var colors = ['#ef4444', '#f59e0b', '#f59e0b', '#10b981', '#10b981'];
+                    var texts = ['弱', '较弱', '中等', '强', '很强'];
+                    var widths = ['20%', '40%', '60%', '80%', '100%'];
+
+                    var index = Math.min(strength, 4);
+                    strengthFill.style.width = widths[index];
+                    strengthFill.style.background = colors[index];
+                    strengthText.textContent = texts[index];
+                });
+            }
+
+            // 注册表单提交
+            var registerForm = document.getElementById('registerForm');
+            var errorDiv = document.getElementById('formError');
+            var successDiv = document.getElementById('formSuccess');
+
+            if (registerForm) {
+                registerForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    errorDiv.classList.remove('show');
+                    successDiv.classList.remove('show');
+
+                    var username = document.getElementById('username').value.trim();
+                    var email = document.getElementById('email').value.trim();
+                    var password = document.getElementById('password').value;
+                    var confirmPassword = document.getElementById('confirmPassword').value;
+                    var captcha = document.getElementById('captcha').value.trim();
+                    var agree = document.getElementById('agree').checked;
+
+                    // 验证
+                    if (!username) {
+                        showError('用户名不能为空！');
+                        return;
+                    }
+
+                    if (!email) {
+                        showError('邮箱不能为空！');
+                        return;
+                    }
+
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        showError('请输入有效的邮箱地址！');
+                        return;
+                    }
+
+                    if (password.length < 6) {
+                        showError('密码长度不能少于6位！');
+                        return;
+                    }
+
+                    if (password !== confirmPassword) {
+                        showError('两次输入的密码不一致！');
+                        return;
+                    }
+
+                    if (!captcha) {
+                        showError('请输入验证码！');
+                        return;
+                    }
+
+                    if (!agree) {
+                        showError('请阅读并同意用户协议和隐私政策！');
+                        return;
+                    }
+
+                    // 发送注册请求
+                    var btn = document.getElementById('registerBtn');
+                    btn.classList.add('loading');
+                    btn.disabled = true;
+
+                    var params = new URLSearchParams();
+                    params.append('username', username);
+                    params.append('password', password);
+                    params.append('email', email);
+                    params.append('captcha', captcha);
+
+                    fetch('/doRegister', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        credentials: 'same-origin',
+                        body: params.toString()
+                    })
+                        .then(function (res) {
+                            if (!res.ok) {
+                                throw new Error('服务器返回状态码: ' + res.status);
+                            }
+                            return res.json();
+                        })
+                        .then(function (data) {
+                            if (data.success) {
+                                successDiv.textContent = data.message + ' 即将跳转到登录页...';
+                                successDiv.classList.add('show');
+                                setTimeout(function () {
+                                    window.location.href = '/login';
+                                }, 2000);
+                            } else {
+                                showError(data.message || '注册失败，请重试！');
+                            }
+                        })
+                        .catch(function (err) {
+                            console.error('注册错误:', err);
+                            showError('注册失败，请检查控制台错误信息或联系管理员！');
+                        })
+                        .finally(function () {
+                            btn.classList.remove('loading');
+                            btn.disabled = false;
+                        });
+                });
+            }
+
+            function showError(msg) {
+                errorDiv.textContent = msg;
+                errorDiv.classList.add('show');
+            }
+        });
+    </script>
+
+</body>
+</html>

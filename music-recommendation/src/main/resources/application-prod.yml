@@ -1,0 +1,52 @@
+# ============================================================
+# 🏭 生产环境 Profile
+# ------------------------------------------------------------
+# 用法：java -jar app.jar --spring.profiles.active=prod
+# ============================================================
+
+spring:
+  # 🟢 数据源 —— 生产环境从环境变量读取密码
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/music_recommendation?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=true}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # 🟢 JPA —— 关闭 SQL 日志，提高性能
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        # 开启批量写入（生产优化）
+        jdbc.batch_size: 50
+
+  # 🟢 SQL 初始化 —— 生产环境不自动重建
+  sql:
+    init:
+      mode: never
+
+  # 🟢 Thymeleaf —— 开启模板缓存
+  thymeleaf:
+    cache: true
+
+  # 🟢 静态资源 —— 关闭 immutable（无 hash 文件名会导致更新不生效）
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          immutable: false
+
+server:
+  # 🟢 生产可改为 HTTPS 端口
+  compression:
+    enabled: true
+    mime-types: "text/html,text/html;charset=UTF-8,text/css,text/css;charset=UTF-8,application/javascript,text/javascript,application/json,image/svg+xml,text/plain"
+    min-response-size: 512
+
+# 🟢 日志级别 —— 减少 Hibernate SQL 噪音
+logging:
+  level:
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.web: INFO

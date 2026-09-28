@@ -1,0 +1,204 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='我的品味 - 行為分析')}"></head>
+<body class="bg-dark">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/index}">🎵 智能音樂推薦</a>
+        <div class="d-flex gap-2">
+            <a th:href="@{/profile}" class="btn btn-sm btn-outline-secondary">個人中心</a>
+            <a th:href="@{/index}" class="btn btn-sm btn-primary">首頁</a>
+        </div>
+    </div>
+</nav>
+
+<section class="container py-4">
+    <!-- HERO -->
+    <div class="rounded-4 p-4 mb-4"
+         style="background: linear-gradient(135deg, #0ea5e922, #6366f122, #ec489922); border: 1px solid #ffffff1a;">
+        <h1 class="display-6 fw-bold text-white mb-1">🎨 我的品味</h1>
+        <p class="text-white-50 mb-0" th:text="'嗨，' + ${nickname} + '！以下是你的音樂行為分析'">嗨！以下是你的音樂行為分析</p>
+    </div>
+
+    <!-- 總體統計卡 -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-dark border-secondary text-center py-3">
+                <div class="text-warning display-6 fw-bold" th:text="${totalPlayed}">0</div>
+                <div class="text-white-50 small">總播放次數</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-dark border-secondary text-center py-3">
+                <div class="text-danger display-6 fw-bold" th:text="${totalLiked}">0</div>
+                <div class="text-white-50 small">點贊歌曲數</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-dark border-secondary text-center py-3">
+                <div class="text-info display-6 fw-bold" th:text="${genreStats.size()}">0</div>
+                <div class="text-white-50 small">喜愛風格數</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-dark border-secondary text-center py-3">
+                <div class="text-success display-6 fw-bold" th:text="${topArtists.size()}">0</div>
+                <div class="text-white-50 small">喜愛藝人數</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- 左：風格餅圖 -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body">
+                    <h5 class="text-white fw-bold mb-3">🥧 最常聽的風格</h5>
+                    <div id="genrePie" style="width:100%;height:320px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右：最愛歌手柱狀圖 -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body">
+                    <h5 class="text-white fw-bold mb-3">🎤 最愛歌手榜</h5>
+                    <div id="artistBar" style="width:100%;height:320px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7天播放熱力圖 -->
+    <div class="card bg-dark border-secondary mt-4">
+        <div class="card-body">
+            <h5 class="text-white fw-bold mb-3">🔥 最近 7 天播放熱力圖</h5>
+            <div id="heatmap" style="width:100%;height:260px;"></div>
+            <div class="text-white-50 small mt-2">橫軸為小時（0-23），縱軸為最近 7 天（上→下 = 昨天→今天）</div>
+        </div>
+    </div>
+
+    <!-- 最近播放 -->
+    <div class="card bg-dark border-secondary mt-4 mb-4">
+        <div class="card-body">
+            <h5 class="text-white fw-bold mb-3">🕒 最近播放</h5>
+            <div th:if="${recentPlays != null and !recentPlays.isEmpty()}" class="row g-2">
+                <div th:each="song : ${recentPlays}" class="col-12 col-md-6 col-lg-3">
+                    <a th:href="@{/song/{id}(id=${song.id})}" class="text-decoration-none">
+                        <div class="d-flex align-items-center gap-3 p-2 rounded hover-row" style="transition:.15s;">
+                            <img th:if="${song.coverUrl}" th:src="${song.coverUrl}"
+                                 style="width:48px;height:48px;object-fit:cover;border-radius:6px;" alt="">
+                            <div th:if="${!song.coverUrl}"
+                                 class="d-flex align-items-center justify-content-center bg-secondary text-white"
+                                 style="width:48px;height:48px;border-radius:6px;font-size:18px;">🎵</div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="text-white text-truncate" th:text="${song.title}"></div>
+                                <div class="text-white-50 small text-truncate" th:text="${song.artist}"></div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div th:if="${recentPlays == null or recentPlays.isEmpty()}" class="text-center text-white-50 py-4">
+                還沒有播放記錄，去首頁聽一首吧 🎧
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+/* ========== 風格餅圖 ========== */
+const genreData = /*[[${genreStats}]]*/ {};
+const genreChart = echarts.init(document.getElementById('genrePie'), 'dark');
+const pieData = Object.entries(genreData).map(([k, v]) => ({ name: k, value: v }));
+genreChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'item', backgroundColor: '#1f2937', borderColor: '#374151', textStyle: { color: '#fff' } },
+    legend: { bottom: 0, textStyle: { color: '#9ca3af' } },
+    series: [{
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: true,
+        itemStyle: { borderRadius: 6, borderColor: '#1f2937', borderWidth: 2 },
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold', color: '#fff' } },
+        data: pieData.length ? pieData : [{ name: '暫無數據', value: 1 }]
+    }],
+    color: ['#f59e0b', '#ef4444', '#6366f1', '#10b981', '#06b6d4', '#ec4899']
+});
+
+/* ========== 最愛歌手柱狀圖 ========== */
+const artistData = /*[[${topArtists}]]*/ {};
+const artistChart = echarts.init(document.getElementById('artistBar'), 'dark');
+const artistNames = Object.keys(artistData);
+const artistValues = Object.values(artistData);
+artistChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis', backgroundColor: '#1f2937', borderColor: '#374151', textStyle: { color: '#fff' } },
+    grid: { left: 100, right: 20, top: 20, bottom: 30 },
+    xAxis: { type: 'value', axisLabel: { color: '#9ca3af' }, splitLine: { lineStyle: { color: '#374151' } } },
+    yAxis: { type: 'category', data: artistNames.reverse(), axisLabel: { color: '#e5e7eb' } },
+    series: [{
+        type: 'bar',
+        data: artistValues.reverse(),
+        itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                { offset: 0, color: '#6366f1' },
+                { offset: 1, color: '#ec4899' }
+            ]),
+            borderRadius: [0, 4, 4, 0]
+        },
+        barWidth: 20
+    }]
+});
+
+/* ========== 7天播放熱力圖 ========== */
+const heatRaw = /*[[${heatmapData}]]*/ [];
+const heatChart = echarts.init(document.getElementById('heatmap'), 'dark');
+const days = ['6天前', '5天前', '4天前', '3天前', '2天前', '昨天', '今天'];
+const hours = Array.from({length: 24}, (_, i) => i + ':00');
+// ECharts heatmap 格式 [hour, day, value]
+const heatData = heatRaw.map(([d, h, v]) => [h, d, v]);
+heatChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { position: 'top', backgroundColor: '#1f2937', borderColor: '#374151', textStyle: { color: '#fff' } },
+    grid: { left: 70, right: 40, top: 10, bottom: 40 },
+    xAxis: {
+        type: 'category', data: hours,
+        axisLabel: { color: '#9ca3af', interval: 2 },
+        splitArea: { show: true },
+        axisLine: { lineStyle: { color: '#374151' } }
+    },
+    yAxis: {
+        type: 'category', data: days,
+        axisLabel: { color: '#e5e7eb' },
+        splitArea: { show: true },
+        axisLine: { lineStyle: { color: '#374151' } }
+    },
+    visualMap: {
+        min: 0, max: Math.max(...heatData.map(d => d[2]), 1),
+        calculable: true, orient: 'horizontal', left: 'center', bottom: 0,
+        textStyle: { color: '#9ca3af' },
+        inRange: { color: ['#1f2937', '#0ea5e9', '#6366f1', '#ec4899', '#f59e0b'] }
+    },
+    series: [{
+        name: '播放次數', type: 'heatmap', data: heatData,
+        label: { show: false },
+        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } }
+    }]
+});
+
+/* 響應式 */
+window.addEventListener('resize', () => { genreChart.resize(); artistChart.resize(); heatChart.resize(); });
+</script>
+
+<style>
+    .bg-dark { background: #121212 !important; }
+    body { background: #0a0a0a; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .hover-row:hover { background: rgba(99,102,241,.1) !important; }
+</style>
+</body>
+</html>

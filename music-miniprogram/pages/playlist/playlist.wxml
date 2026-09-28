@@ -1,0 +1,26 @@
+<!--pages/playlist/playlist.wxml-->
+<view class="container">
+  <view class="section">
+    <view class="section-title">🔥 热门歌单</view>
+    <view class="playlist-grid">
+      <view
+        wx:for="{{playlists}}"
+        wx:key="id"
+        class="playlist-item"
+        data-pl="{{item}}"
+        bindtap="goDetail"
+      >
+        <view class="playlist-cover">
+          <image
+            src="{{item.coverUrl || ''}}"
+            mode="aspectFill"
+            class="cover-img"
+          />
+          <view class="play-overlay">▶</view>
+        </view>
+        <text class="playlist-name">{{item.name}}</text>
+        <text class="playlist-meta" wx:if="{{item.playCount}}">▶ {{item.playCount}}</text>
+      </view>
+    </view>
+  </view>
+</view>

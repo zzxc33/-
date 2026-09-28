@@ -1,0 +1,47 @@
+<!--pages/login/login.wxml-->
+<view class="login-page">
+  <view class="logo-area">
+    <text class="logo">🎵</text>
+    <text class="app-name">音乐推荐</text>
+    <text class="slogan">发现属于你的旋律</text>
+  </view>
+
+  <view class="form">
+    <view class="tab-switch">
+      <view class="tab-item {{isLogin ? 'active' : ''}}" value="login" bindtap="switchTab">登录</view>
+      <view class="tab-item {{!isLogin ? 'active' : ''}}" value="register" bindtap="switchTab">注册</view>
+    </view>
+
+    <view class="input-group">
+      <input
+        class="form-input"
+        placeholder="用户名"
+        placeholder-class="placeholder"
+        data-field="username"
+        bindinput="onInput"
+      />
+      <input
+        class="form-input"
+        placeholder="密码（至少 6 位）"
+        placeholder-class="placeholder"
+        password
+        data-field="password"
+        bindinput="onInput"
+      />
+      <input
+        wx:if="{{!isLogin}}"
+        class="form-input"
+        placeholder="邮箱（选填）"
+        placeholder-class="placeholder"
+        data-field="email"
+        bindinput="onInput"
+      />
+    </view>
+
+    <button class="submit-btn" bindtap="submit" loading="{{loading}}">
+      {{isLogin ? '登 录' : '注 册'}}
+    </button>
+
+    <view class="tips">测试账号：admin / admin123</view>
+  </view>
+</view>

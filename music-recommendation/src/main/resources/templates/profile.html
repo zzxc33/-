@@ -1,0 +1,386 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='个人中心 - 智能音乐推荐')}"></head>
+<style>
+    /* 个人中心专属 */
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 36px;
+        background: linear-gradient(160deg, rgba(245, 158, 11, 0.1), rgba(167, 139, 250, 0.05));
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 22px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+    }
+    .profile-header::before {
+        content: '♪♫♩';
+        position: absolute;
+        right: 40px;
+        top: 20px;
+        font-size: 140px;
+        color: #A78BFA;
+        opacity: 0.04;
+        letter-spacing: 20px;
+    }
+    .profile-avatar-large {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #F59E0B, #F97316, #A78BFA);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 42px;
+        flex-shrink: 0;
+        z-index: 1;
+        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+    }
+    .profile-info h2 {
+        font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+    .profile-info .username {
+        font-size: 13px;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 12px;
+    }
+    .profile-info .user-bio {
+        font-size: 14px;
+        color: rgba(255,255,255,0.55);
+        max-width: 480px;
+    }
+    .profile-badges {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+    .profile-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    .badge-gold { background: rgba(245, 158, 11, 0.15); color: #FCD34D; }
+    .badge-cf { background: rgba(167, 139, 250, 0.15); color: #C4B5FD; }
+    .badge-music { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+
+    /* section-block 内的链接悬浮色覆盖 main.css */
+    .section-block h3 a:hover { color: #F59E0B; }
+
+    /* 风格分布条 (profile 专属) */
+    .genre-distribution {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .genre-item-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .genre-item-bar .genre-label {
+        width: 60px;
+        font-size: 12px;
+        color: rgba(255,255,255,0.65);
+        font-weight: 500;
+    }
+    .genre-item-bar .genre-bar {
+        flex: 1;
+        height: 10px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .genre-item-bar .genre-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 1s ease;
+    }
+    .genre-item-bar .genre-pct {
+        width: 44px;
+        font-size: 11px;
+        color: rgba(255,255,255,0.4);
+        text-align: right;
+    }
+    .fill-pop { background: linear-gradient(90deg, #F59E0B, #F97316); }
+    .fill-rock { background: linear-gradient(90deg, #EF4444, #EC4899); }
+    .fill-folk { background: linear-gradient(90deg, #F59E0B, #EA580C); }
+    .fill-light { background: linear-gradient(90deg, #10B981, #14B8A6); }
+    .fill-anci { background: linear-gradient(90deg, #3B82F6, #8B5CF6); }
+
+    /* mini song list (profile 专属) */
+    .mini-song-list { display: flex; flex-direction: column; }
+    .mini-song-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        cursor: pointer;
+        transition: background 0.2s;
+        border-radius: 8px;
+    }
+    .mini-song-item:hover { background: rgba(255,255,255,0.04); }
+    .mini-song-item:last-child { border-bottom: none; }
+    .mini-song-thumb {
+        width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0;
+        background: rgba(255,255,255,0.05);
+    }
+    .mini-song-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .mini-song-info { flex: 1; min-width: 0; }
+    .mini-song-info .title {
+        font-size: 13px; color: #fff; font-weight: 500;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        margin-bottom: 3px;
+    }
+    .mini-song-info .artist {
+        font-size: 11px; color: rgba(255,255,255,0.4);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mini-song-meta {
+        font-size: 11px; color: rgba(255,255,255,0.3);
+    }
+
+    /* 表单网格 */
+    .profile-form { max-width: 100%; }
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 20px;
+    }
+    .form-grid .form-group { margin-bottom: 0; }
+    .form-grid .full-width { grid-column: 1 / -1; }
+
+    @media (max-width: 900px) {
+        .two-col { grid-template-columns: 1fr; }
+        .form-grid { grid-template-columns: 1fr; }
+    }
+</style>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='profile')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <h1 class="page-title">👤 个人中心</h1>
+            <p class="page-subtitle">管理个人信息，查看你的音乐足迹与推荐偏好</p>
+            <div id="message-area"></div>
+
+            <!-- 个人资料头部 -->
+            <div class="profile-header">
+                <div class="profile-avatar-large">👤</div>
+                <div class="profile-info">
+                    <h2 th:text="${user.nickname} ?: ${user.username}">用户名</h2>
+                    <div class="username" th:text="'@' + ${user.username}">@username</div>
+                    <div class="user-bio" th:if="${user.favoriteGenre != null and not user.favoriteGenre.isEmpty()}">
+                        🎧 最爱的音乐风格：<span style="color:#a78bfa;font-weight:500;" th:text="${user.favoriteGenre}">流行</span>
+                    </div>
+                    <div class="user-bio" th:unless="${user.favoriteGenre != null and not user.favoriteGenre.isEmpty()}">
+                        🎧 设置你喜欢的风格，让推荐更懂你~
+                    </div>
+                    <div class="profile-badges">
+                        <span class="profile-badge badge-cf">🧠 协同过滤推荐用户</span>
+                        <span class="profile-badge badge-gold">⭐ 音乐爱好者</span>
+                        <span class="profile-badge badge-music">🎵 活跃听众</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据统计卡 -->
+            <div class="stat-row">
+                <div class="stat-card">
+                    <div class="stat-icon">🎧</div>
+                    <div class="stat-value" th:text="${totalPlayed != null ? totalPlayed : 0}">0</div>
+                    <div class="stat-label">已播放歌曲</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❤️</div>
+                    <div class="stat-value" th:text="${totalLiked != null ? totalLiked : 0}">0</div>
+                    <div class="stat-label">喜欢的音乐</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-value" th:text="${playlistCount != null ? playlistCount : 0}">0</div>
+                    <div class="stat-label">创建的歌单</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-value">--</div>
+                    <div class="stat-label">收听总时长(分钟)</div>
+                </div>
+            </div>
+
+            <!-- 两栏：喜欢的音乐 + 风格分布 -->
+            <div class="two-col">
+                <div class="section-block">
+                    <h3>❤️ 我喜欢的音乐 <a href="/song/search">更多 →</a></h3>
+                    <div class="mini-song-list">
+                        <div th:if="${likedSongs != null and not #lists.isEmpty(likedSongs)}"
+                             th:each="s : ${likedSongs}"
+                             class="mini-song-item"
+                             th:data-song="${s.toJson()}"
+                             th:onclick="|var data=this.getAttribute('data-song'); if(data){try{var song=JSON.parse(data); playSong(song);}catch(e){}}|">
+                            <div class="mini-song-thumb">
+                                <img loading="lazy" th:src="${s.coverUrl}" alt="" onerror="this.src='/images/default-cover.svg'">
+                            </div>
+                            <div class="mini-song-info">
+                                <div class="title" th:text="${s.title}">歌曲名</div>
+                                <div class="artist" th:text="${s.artist}">歌手</div>
+                            </div>
+                            <div class="mini-song-meta" th:text="${s.duration}">4:29</div>
+                        </div>
+
+                        <!-- 没有数据时展示示例 -->
+                        <div th:if="${likedSongs == null or #lists.isEmpty(likedSongs)}">
+                            <div class="mini-song-item" onclick="playDemoSong(1)">
+                                <div class="mini-song-thumb">
+                                    <img loading="lazy" src="/images/cover-1.svg" alt="">
+                                </div>
+                                <div class="mini-song-info">
+                                    <div class="title">晴天</div>
+                                    <div class="artist">周杰伦</div>
+                                </div>
+                                <div class="mini-song-meta">04:29</div>
+                            </div>
+                            <div class="mini-song-item" onclick="playDemoSong(2)">
+                                <div class="mini-song-thumb">
+                                    <img loading="lazy" src="/images/cover-4.svg" alt="">
+                                </div>
+                                <div class="mini-song-info">
+                                    <div class="title">海阔天空</div>
+                                    <div class="artist">Beyond</div>
+                                </div>
+                                <div class="mini-song-meta">05:24</div>
+                            </div>
+                            <div class="mini-song-item" onclick="playDemoSong(3)">
+                                <div class="mini-song-thumb">
+                                    <img loading="lazy" src="/images/cover-5.svg" alt="">
+                                </div>
+                                <div class="mini-song-info">
+                                    <div class="title">孤勇者</div>
+                                    <div class="artist">陈奕迅</div>
+                                </div>
+                                <div class="mini-song-meta">04:18</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-block">
+                    <h3>🎶 我的音乐口味</h3>
+                    <div class="genre-distribution">
+                        <div class="genre-item-bar">
+                            <span class="genre-label">流行</span>
+                            <div class="genre-bar"><div class="genre-fill fill-pop" style="width: 45%"></div></div>
+                            <span class="genre-pct">45%</span>
+                        </div>
+                        <div class="genre-item-bar">
+                            <span class="genre-label">摇滚</span>
+                            <div class="genre-bar"><div class="genre-fill fill-rock" style="width: 22%"></div></div>
+                            <span class="genre-pct">22%</span>
+                        </div>
+                        <div class="genre-item-bar">
+                            <span class="genre-label">民谣</span>
+                            <div class="genre-bar"><div class="genre-fill fill-folk" style="width: 18%"></div></div>
+                            <span class="genre-pct">18%</span>
+                        </div>
+                        <div class="genre-item-bar">
+                            <span class="genre-label">轻音乐</span>
+                            <div class="genre-bar"><div class="genre-fill fill-light" style="width: 10%"></div></div>
+                            <span class="genre-pct">10%</span>
+                        </div>
+                        <div class="genre-item-bar">
+                            <span class="genre-label">古风</span>
+                            <div class="genre-bar"><div class="genre-fill fill-anci" style="width: 5%"></div></div>
+                            <span class="genre-pct">5%</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+                        <h4 style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 10px;">🧠 推荐算法说明</h4>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.8;">
+                            系统基于 <span style="color:#a78bfa;">协同过滤算法 (User-CF 60% + Item-CF 40%)</span>
+                            ，结合你的播放次数、点赞、播放时效等行为，为你生成个性化推荐。喜欢的风格分布越均衡，推荐多样性越好！
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 编辑资料表单 -->
+            <div class="section-block">
+                <h3>✏️ 编辑个人资料</h3>
+                <div class="profile-form">
+                    <form id="profile-form" onsubmit="event.preventDefault(); updateProfile();">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="nickname">昵称</label>
+                                <input type="text" id="nickname" name="nickname"
+                                       th:value="${user.nickname}" placeholder="设置你的昵称">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">邮箱</label>
+                                <input type="email" id="email" name="email"
+                                       th:value="${user.email}" placeholder="your@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">手机号</label>
+                                <input type="tel" id="phone" name="phone"
+                                       th:value="${user.phone}" placeholder="手机号">
+                            </div>
+                            <div class="form-group">
+                                <label for="favoriteGenre">喜欢的音乐风格（影响推荐）</label>
+                                <select id="favoriteGenre" name="favoriteGenre">
+                                    <option value="">选择一个偏好风格</option>
+                                    <option value="流行" th:selected="${user.favoriteGenre == '流行'}">流行</option>
+                                    <option value="摇滚" th:selected="${user.favoriteGenre == '摇滚'}">摇滚</option>
+                                    <option value="民谣" th:selected="${user.favoriteGenre == '民谣'}">民谣</option>
+                                    <option value="轻音乐" th:selected="${user.favoriteGenre == '轻音乐'}">轻音乐</option>
+                                    <option value="古风" th:selected="${user.favoriteGenre == '古风'}">古风</option>
+                                    <option value="爵士" th:selected="${user.favoriteGenre == '爵士'}">爵士</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="avatarUrl">头像链接 (可选)</label>
+                                <input type="text" id="avatarUrl" name="avatarUrl"
+                                       th:value="${user.avatarUrl}" placeholder="输入头像图片URL">
+                            </div>
+                        </div>
+                        <div style="margin-top: 22px;">
+                            <button type="submit" class="btn btn-primary">💾 保存修改</button>
+                            <button type="reset" class="btn btn-secondary" style="margin-left: 10px;">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 增强版播放器 -->
+    <div th:replace="~{fragments/player :: player}"></div>
+
+    <!-- 播放列表展开面板 -->
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+
+    <!-- 键盘快捷键提示 -->
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+    <script>
+        function playDemoSong(idx) {
+            var demos = [
+                {id:1,title:'晴天',artist:'周杰伦',coverUrl:'/images/cover-1.svg',genre:'流行',duration:'04:29'},
+                {id:7,title:'海阔天空',artist:'Beyond',coverUrl:'/images/cover-4.svg',genre:'摇滚',duration:'05:24'},
+                {id:10,title:'孤勇者',artist:'陈奕迅',coverUrl:'/images/cover-5.svg',genre:'流行',duration:'04:18'}
+            ];
+            playSong(demos[idx-1]);
+        }
+    </script>
+</body>
+</html>

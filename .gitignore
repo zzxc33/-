@@ -1,0 +1,59 @@
+# ==================== Java / Maven ====================
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+replay_pid*
+
+# ==================== IDE ====================
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.factorypath
+
+# ==================== VS Code ====================
+.vscode/
+*.code-workspace
+
+# ==================== 微信小程序 ====================
+music-miniprogram/node_modules/
+music-miniprogram/project.private.config.json
+
+# ==================== 环境变量 ====================
+.env
+.env.local
+.env.*.local
+
+# ==================== 操作系统 ====================
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==================== 临时文件 ====================
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# ==================== GitHub 工具残留 ====================
+.github/modernize/
+
+# ==================== Node.js ====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==================== 构建产物 ====================
+build/
+out/
+dist/

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>开题答辩 · 音乐推荐系统</title>
+<style>
+/* ============ 全局 ============ */
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; }
+html, body { background:#1a1a1a; }
+body { font-family:'PingFang SC','Microsoft YaHei',-apple-system,sans-serif; color:#fff; }
+
+/* ============ 画布 1280×720 ============ */
+.canvas {
+  position:fixed; top:50%; left:50%;
+  width:1280px; height:720px;
+  transform: translate(-50%,-50%) scale(1);
+  transform-origin: center center;
+  background:#0f0f1a;
+  box-shadow: 0 20px 80px rgba(0,0,0,.6), 0 4px 16px rgba(233,69,96,.08);
+  overflow:hidden;
+}
+
+/* ============ Slides ============ */
+.slide {
+  position:absolute; inset:0;
+  opacity:0; visibility:hidden;
+  transition: opacity .5s cubic-bezier(.2,.7,.2,1), visibility .5s;
+  padding: 56px 72px 64px;
+  overflow-y:auto;
+  background:
+    radial-gradient(ellipse at 85% -10%, rgba(233,69,96,.08) 0%, transparent 50%),
+    radial-gradient(ellipse at -10% 110%, rgba(233,69,96,.05) 0%, transparent 50%),
+    #0f0f1a;
+}
+.slide.active { opacity:1; visibility:visible; }
+.slide::-webkit-scrollbar { width:4px; }
+.slide::-webkit-scrollbar-thumb { background:#e94560; border-radius:2px; }
+.slide::-webkit-scrollbar-track { background:transparent; }
+
+/* ============ Chrome 顶部 ============ */
+.chrome-top {
+  position:absolute; top:0; left:0; right:0;
+  height:40px; padding:0 72px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:#666;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  letter-spacing:.08em;
+}
+.chrome-top .brand { display:flex; align-items:center; gap:10px; }
+.chrome-top .brand-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:#e94560; box-shadow:0 0 8px #e94560;
+}
+
+/* ============ Chrome 底部 ============ */
+.chrome-bottom {
+  position:absolute; bottom:0; left:0; right:0;
+  height:40px; padding:0 72px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:#555;
+  border-top:1px solid rgba(255,255,255,.04);
+  letter-spacing:.08em;
+}
+.chrome-bottom .page-num { color:#888; font-variant-numeric: tabular-nums; }
+.chrome-bottom .page-num em { color:#e94560; font-style:normal; font-weight:700; margin-right:2px; }
+
+/* ============ 标题系统 ============ */
+.kicker {
+  font-size:11px; color:#e94560; text-transform:uppercase;
+  letter-spacing:.2em; font-weight:600; margin-bottom:14px;
+  display:flex; align-items:center; gap:12px;
+}
+.kicker::after {
+  content:''; flex:1; height:1px;
+  background:linear-gradient(90deg, rgba(233,69,96,.4), transparent);
+}
+.h1 {
+  font-size:36px; font-weight:800; color:#fff; line-height:1.25;
+  letter-spacing:-.01em; margin-bottom:8px;
+}
+.h2 {
+  font-size:22px; font-weight:700; color:#e94560;
+  margin:28px 0 12px; letter-spacing:.02em;
+  display:flex; align-items:center; gap:10px;
+}
+.h2::before {
+  content:''; width:4px; height:22px;
+  background:#e94560; border-radius:2px;
+}
+.body {
+  font-size:17px; line-height:1.75; color:#b8b8c8;
+}
+.body strong { color:#e94560; font-weight:600; }
+.mono {
+  font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+  font-size:15px; color:#ff7b9c; background:rgba(233,69,96,.08);
+  padding:2px 8px; border-radius:4px;
+}
+
+/* ============ 代码块 ============ */
+.code-block {
+  background:#0a0a14;
+  border:1px solid rgba(233,69,96,.2);
+  border-left:3px solid #e94560;
+  border-radius:8px;
+  padding:16px 20px;
+  font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+  font-size:14px; line-height:1.75;
+  overflow-x:auto; margin:14px 0;
+  color:#d4d4e0;
+}
+.code-block .kw { color:#ff7b9c; font-weight:600; }
+.code-block .fn { color:#7ec8e3; }
+.code-block .str { color:#a8e6a1; }
+.code-block .cm { color:#666; font-style:italic; }
+.code-block .num { color:#ffb86c; }
+
+/* ============ 卡片 ============ */
+.grid-cards {
+  display:grid; gap:14px;
+  margin-top:16px;
+}
+.card {
+  background:linear-gradient(135deg, #141428 0%, #0f0f1a 100%);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;
+  padding:18px 20px;
+  transition: border-color .2s;
+}
+.card:hover { border-color:rgba(233,69,96,.4); }
+.card-label {
+  font-size:12px; color:#e94560; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase;
+  margin-bottom:10px;
+}
+.card-title {
+  font-size:18px; font-weight:700; color:#fff; margin-bottom:6px;
+}
+.card-desc {
+  font-size:15px; color:#9898b0; line-height:1.65;
+}
+
+/* ============ 表格 ============ */
+.table-wrap { margin-top:16px; overflow:hidden; border-radius:10px; border:1px solid rgba(255,255,255,.06); }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { padding:10px 14px; text-align:left; }
+thead th {
+  background:rgba(233,69,96,.12);
+  font-size:11px; text-transform:uppercase; letter-spacing:.1em;
+  color:#e94560; font-weight:700;
+}
+tbody tr { border-top:1px solid rgba(255,255,255,.04); }
+tbody tr:hover { background:rgba(255,255,255,.02); }
+td { color:#b0b0c5; font-family:'JetBrains Mono',Consolas,monospace; }
+td.human { font-family:inherit; }
+td.tag {
+  display:inline-block; padding:2px 10px; border-radius:20px;
+  font-size:11px; font-weight:600; letter-spacing:.04em;
+}
+
+/* ============ 进度点 ============ */
+.nav-dots {
+  position:absolute; bottom:56px; left:50%; transform:translateX(-50%);
+  display:flex; gap:10px; z-index:50;
+}
+.nav-dots .dot {
+  width:8px; height:8px; border-radius:50%;
+  background:rgba(255,255,255,.15);
+  transition: all .3s; cursor:pointer;
+}
+.nav-dots .dot.active {
+  width:24px; border-radius:4px; background:#e94560;
+  box-shadow:0 0 10px #e94560;
+}
+
+/* ============ Slide 1: Cover ============ */
+.cover-bg {
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(233,69,96,.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(120,70,255,.1) 0%, transparent 50%),
+    #0a0a14;
+}
+.cover-grid {
+  position:absolute; inset:0; background-image:
+    linear-gradient(rgba(233,69,96,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(233,69,96,.04) 1px, transparent 1px);
+  background-size: 40px 40px; mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+.cover-content {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  text-align:center;
+}
+.cover-emoji { font-size:80px; margin-bottom:16px; filter: drop-shadow(0 0 30px rgba(233,69,96,.4)); }
+.cover-title {
+  font-size:56px; font-weight:900;
+  background:linear-gradient(135deg, #e94560, #ffb4b4, #e94560);
+  background-size:200% 200%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation: shimmer 4s ease infinite;
+  margin-bottom:10px; letter-spacing:-.02em;
+}
+@keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+.cover-subtitle { font-size:22px; color:#8888a0; margin-bottom:48px; letter-spacing:.03em; }
+.cover-meta { font-size:14px; color:#666; line-height:2; }
+.cover-meta strong { color:#b8b8c8; font-weight:600; }
+
+/* ============ Slide 6: Architecture ============ */
+.arch-layer {
+  background:linear-gradient(90deg, rgba(233,69,96,.08), rgba(233,69,96,.02));
+  border:1px solid rgba(233,69,96,.2);
+  border-radius:10px; padding:12px 18px; margin:8px 0;
+}
+.arch-layer .arch-title {
+  font-size:12px; color:#e94560; font-weight:700; letter-spacing:.12em;
+  margin-bottom:8px;
+}
+.arch-items { display:flex; flex-wrap:wrap; gap:8px; }
+.arch-chip {
+  background:#141428; border:1px solid rgba(255,255,255,.08);
+  border-radius:6px; padding:5px 12px;
+  font-size:12px; color:#ccc;
+}
+.arch-chip.accent { border-color:#e94560; color:#fff; background:rgba(233,69,96,.15); font-weight:600; }
+.arch-arrow { text-align:center; color:#e94560; font-size:18px; margin:2px 0; }
+
+/* ============ Slide 5: Weight bars ============ */
+.weight-row { display:flex; align-items:center; gap:14px; margin:6px 0; }
+.weight-label { width:130px; font-size:14px; color:#b8b8c8; flex-shrink:0; }
+.weight-bar { flex:1; height:22px; background:#1a1a2e; border-radius:11px; overflow:hidden; display:flex; }
+.weight-seg { height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; letter-spacing:.04em; }
+.seg-cf { background:#e94560; }
+.seg-cb { background:#ffb86c; color:#333; }
+.seg-pop { background:#7ec8e3; color:#333; }
+.seg-rand { background:#555; }
+.weight-tag { width:50px; text-align:center; font-size:11px; font-weight:600; flex-shrink:0; }
+.tag-sparse { color:#ffb86c; }
+.tag-normal { color:#7ec8e3; }
+
+/* ============ Slide 9: Timeline ============ */
+.timeline { position:relative; padding-left:24px; margin-top:8px; }
+.timeline::before {
+  content:''; position:absolute; left:7px; top:8px; bottom:8px;
+  width:2px; background:linear-gradient(to bottom, #e94560, rgba(233,69,96,.1));
+}
+.timeline-item { position:relative; padding:8px 0 14px; }
+.timeline-item::before {
+  content:''; position:absolute; left:-22px; top:14px;
+  width:12px; height:12px; border-radius:50%;
+  background:#e94560; border:2px solid #0f0f1a;
+  box-shadow:0 0 0 2px rgba(233,69,96,.3);
+}
+.timeline-item.done::before { background:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.3); }
+.timeline-time { font-size:13px; color:#e94560; font-weight:700; letter-spacing:.02em; }
+.timeline-item.done .timeline-time { color:#22c55e; }
+.timeline-content { font-size:15px; color:#b0b0c5; margin-top:2px; }
+
+/* ============ Cover dots ============ */
+.slide.cover .nav-dots { display:none; }
+
+/* ============ Grid util ============ */
+.cols-2 { grid-template-columns: 1fr 1fr; }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.cols-4 { grid-template-columns: repeat(4, 1fr); }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+
+<!-- ===== Chrome ===== -->
+<div class="chrome-top">
+  <div class="brand"><span class="brand-dot"></span>开题答辩 · 音乐推荐系统</div>
+  <div>软件工程 · 南昌应用技术师范学院 · 2027</div>
+</div>
+<div class="chrome-bottom">
+  <div>开题答辩 · 李江超</div>
+  <div class="page-num"><em id="cur">01</em> / <span id="tot">10</span></div>
+</div>
+<div class="nav-dots" id="dots"></div>
+
+<!-- ==================== SLIDE 1: COVER ==================== -->
+<section class="slide cover active">
+  <div class="cover-bg"></div>
+  <div class="cover-grid"></div>
+  <div class="cover-content">
+    <div class="cover-emoji">🎵</div>
+    <div class="cover-title">音乐资源推荐<br>与歌单管理系统</div>
+    <div class="cover-subtitle">—— 基于 Spring Boot 的混合推荐引擎与双端应用</div>
+    <div class="cover-meta">
+      <div>学生：<strong>李江超</strong>　|　软件工程专业</div>
+      <div>指导教师：<strong>待填写</strong></div>
+      <div>南昌应用技术师范学院 · 2027 届毕业设计开题答辩</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 2: AGENDA ==================== -->
+<section class="slide">
+  <div class="kicker">01 · 汇报提纲</div>
+  <h1 class="h1">目录 · 8 个章节</h1>
+  <div class="grid-cards cols-2" style="margin-top:24px;">
+    <div class="card">
+      <div class="card-label">Chapter 01</div>
+      <div class="card-title">课题背景与研究意义</div>
+      <div class="card-desc">信息过载问题 · 推荐系统必要性 · 毕设切入点</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 02</div>
+      <div class="card-title">国内外研究现状</div>
+      <div class="card-desc">协同过滤 / 内容推荐 / 混合策略三大流派对比</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 03</div>
+      <div class="card-title">研究内容与目标</div>
+      <div class="card-desc">三种算法 + 双端前端 + 管理后台 + 性能优化</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 04</div>
+      <div class="card-title">混合算法深度剖析</div>
+      <div class="card-desc">余弦相似度公式 · 动态权重策略 · 冷启动兜底</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 05</div>
+      <div class="card-title">系统架构设计</div>
+      <div class="card-desc">分层架构 · 双端适配 · REST API 统一出口</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 06</div>
+      <div class="card-title">数据库与接口</div>
+      <div class="card-desc">6 张核心表 · 17 个 REST API · Token 认证</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 07</div>
+      <div class="card-title">进度与已完成工作</div>
+      <div class="card-desc">16 周周期 · 已完成 11 周 · 剩余 5 周</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Chapter 08</div>
+      <div class="card-title">总结与展望</div>
+      <div class="card-desc">成果回顾 · 后续工作 · 技术路线图</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 3: BACKGROUND ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 01 · 课题背景与研究意义</div>
+  <h1 class="h1">为什么需要这个系统？</h1>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:16px;">
+    <div>
+      <h2 class="h2">💡 问题：信息过载</h2>
+      <p class="body">
+        全球在线音乐订阅用户突破 <strong>5 亿</strong>，曲库规模 <strong>数千万首</strong>。<br>
+        传统排行榜 → 反映热门但无法个性化；<br>
+        关键词搜索 → 需要用户明确意图；<br>
+        <span style="color:#e94560;">推荐系统</span> 在"不知道自己想听什么"时主动推送。
+      </p>
+      <h2 class="h2">🎯 为什么我们做？</h2>
+      <p class="body">
+        <strong>学术缺口</strong>：论文多聚焦算法精度，缺少完整工程实践；<br>
+        <strong>毕设缺口</strong>：多数只做算法原型，无完整业务闭环；<br>
+        <strong>工业缺口</strong>：单一算法各有缺陷，混合策略是必由之路。
+      </p>
+    </div>
+    <div>
+      <h2 class="h2">📊 三大核心创新点</h2>
+      <div class="grid-cards" style="gap:10px;">
+        <div class="card" style="border-color:rgba(233,69,96,.4);">
+          <div class="card-label">Innovation #1</div>
+          <div class="card-title">动态权重混合引擎</div>
+          <div class="card-desc">根据用户交互数自动调整 CF/CB/热门/随机 四者权重，解决冷启动</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Innovation #2</div>
+          <div class="card-title">双端统一后端</div>
+          <div class="card-desc">Thymeleaf Web + 微信小程序原生，共用同一套 Spring Boot REST API</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Innovation #3</div>
+          <div class="card-title">推荐引擎诊断后台</div>
+          <div class="card-desc">实时查看三算法独立推荐结果 + 权重可视化 + Cold Start 识别</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 4: ALGORITHMS ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 02-04 · 核心算法</div>
+  <h1 class="h1">三种推荐算法 · 深度剖析</h1>
+  <table style="margin-top:12px;">
+    <thead>
+      <tr><th style="width:140px;">算法模块</th><th>核心公式</th><th>输入数据</th><th>优点</th><th>缺点</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;">CollaborativeRecommender</span></td>
+        <td><code style="color:#7ec8e3;">cos(u,v) = r̂<sub>u</sub>·r̂<sub>v</sub> / ‖r̂<sub>u</sub>‖‖r̂<sub>v</sub>‖</code></td>
+        <td style="font-family:JetBrains Mono,Consolas,monospace;color:#9898b0;">user_song_interactions<br>隐式评分（播放=1, 喜欢=2, 收藏=3）</td>
+        <td class="human">效果好，可发现新类型</td>
+        <td class="human">❌ 冷启动<br>❌ 稀疏性</td>
+      </tr>
+      <tr>
+        <td><span class="tag" style="background:rgba(255,184,108,.2);color:#ffb86c;">ContentBasedRecommender</span></td>
+        <td><code style="color:#a8e6a1;">sim(s,u) = 0.5·cos(G<sub>s</sub>,G<sub>u</sub>) + 0.4·cos(A<sub>s</sub>,A<sub>u</sub>) + 0.1·cos(B<sub>s</sub>,B<sub>u</sub>)</code></td>
+        <td style="font-family:JetBrains Mono,Consolas,monospace;color:#9898b0;">songs.genre / songs.artist / songs.album</td>
+        <td class="human">✅ 无冷启动<br>✅ 可解释</td>
+        <td class="human">❌ 同质化<br>❌ 信息茧房</td>
+      </tr>
+      <tr>
+        <td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">HybridRecommenderService</span></td>
+        <td><code style="color:#e94560;">final = α·CF<sub>norm</sub> + β·CB<sub>norm</sub> + γ·Pop + δ·Rand</code></td>
+        <td style="font-family:JetBrains Mono,Consolas,monospace;color:#9898b0;">两者融合 + 动态权重表</td>
+        <td class="human">✅ 扬长避短<br>✅ 可诊断</td>
+        <td class="human">复杂度略高</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class="h2">🎯 协同过滤关键实现代码</h2>
+  <div class="code-block"><pre><span class="cm">// CollaborativeRecommender.java — 相似度计算</span>
+<span class="kw">double</span> sim = dotProduct / (normA * normB);  <span class="cm">// 余弦相似度</span>
+<span class="kw">double</span> score = similarity * targetRating;   <span class="cm">// 加权得分</span>
+<span class="kw">return</span> scores.entrySet().stream()
+  .sorted(Map.Entry.<span class="kw">Long</span>,<span class="kw">Double</span>>comparingByValue().reversed())
+  .limit(<span class="num">limit</span>).collect(Collectors.toList());</pre></div>
+</section>
+
+<!-- ==================== SLIDE 5: HYBRID STRATEGY ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 04 · 核心创新</div>
+  <h1 class="h1">动态权重融合策略</h1>
+  <p class="body" style="margin-bottom:16px;">
+    权重根据用户 <strong>interactionCount</strong>（交互记录数）自动调整，解决冷启动问题。
+    权重表定义在 <span class="mono">HybridRecommenderService.java:55-67</span>
+  </p>
+
+  <div style="margin-top:8px;">
+    <div class="weight-row">
+      <div class="weight-label">❄️ 冷启动（0 条）</div>
+      <div class="weight-bar">
+        <div class="weight-seg seg-rand" style="width:50%;">热门兜底 50%</div>
+        <div class="weight-seg seg-rand" style="width:50%;">随机探索 50%</div>
+      </div>
+      <div class="weight-tag tag-sparse">COLD</div>
+    </div>
+    <div class="weight-row">
+      <div class="weight-label">稀疏（≤5 条）</div>
+      <div class="weight-bar">
+        <div class="weight-seg seg-cf" style="width:20%;">CF 20%</div>
+        <div class="weight-seg seg-cb" style="width:50%;">CB 50%</div>
+        <div class="weight-seg seg-pop" style="width:20%;">热门 20%</div>
+        <div class="weight-seg seg-rand" style="width:10%;">随机 10%</div>
+      </div>
+      <div class="weight-tag tag-sparse">SPARSE</div>
+    </div>
+    <div class="weight-row">
+      <div class="weight-label">🔥 活跃（>5 条）</div>
+      <div class="weight-bar">
+        <div class="weight-seg seg-cf" style="width:50%;">CF 50%</div>
+        <div class="weight-seg seg-cb" style="width:20%;">CB 20%</div>
+        <div class="weight-seg seg-pop" style="width:15%;">热门 15%</div>
+        <div class="weight-seg seg-rand" style="width:15%;">随机 15%</div>
+      </div>
+      <div class="weight-tag tag-normal">NORMAL</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+    <div>
+      <h2 class="h2">🧮 融合公式</h2>
+      <div class="code-block"><pre><span class="cm">// HybridRecommenderService.java:77-84</span>
+<span class="kw">long</span> interactionCount = repo.countByUserId(userId);
+<span class="kw">if</span> (interactionCount == <span class="num">0</span>) {
+  <span class="kw">return</span> hotSongs + randomFill;  <span class="cm">// 纯热门兜底</span>
+}
+<span class="kw">double</span> cfW, cbW, popW, randW;
+<span class="kw">if</span> (interactionCount <= <span class="num">5</span>) {     <span class="cm">// 稀疏</span>
+  cfW=<span class="num">0.20</span>; cbW=<span class="num">0.50</span>; popW=<span class="num">0.20</span>; randW=<span class="num">0.10</span>;
+} <span class="kw">else</span> {                          <span class="cm">// 活跃</span>
+  cfW=<span class="num">0.50</span>; cbW=<span class="num">0.20</span>; popW=<span class="num">0.15</span>; randW=<span class="num">0.15</span>;
+}
+<span class="kw">return</span> cfW*CF_score + cbW*CB_score + popW*pop + randW*random;</pre></div>
+    </div>
+    <div>
+      <h2 class="h2">🛡️ 降级与兜底逻辑</h2>
+      <p class="body">
+        CF 和 CB 得分先做 <strong>min-max 归一化</strong> 到 [0, 1] 再加权；<br>
+        如果 CF 和 CB 都返回空列表 → 降级为 <strong>热门 + 随机</strong>；<br>
+        随机探索的目的：避免只推热门，增加多样性。
+      </p>
+      <div class="grid-cards cols-2" style="margin-top:12px;">
+        <div class="card">
+          <div class="card-label">Cold Start</div>
+          <div class="card-title">0 交互</div>
+          <div class="card-desc">热门 + 随机各 50%</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Fallback</div>
+          <div class="card-title">算法返回空</div>
+          <div class="card-desc">热门 Top N 自动填充</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 6: ARCHITECTURE ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 05 · 系统架构</div>
+  <h1 class="h1">分层架构 · 双端统一后端</h1>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:12px;">
+    <!-- 左：SVG 流程图 -->
+    <div style="display:flex; align-items:center; justify-content:center;">
+      <svg viewBox="0 0 540 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+        <defs>
+          <!-- 渐变 -->
+          <linearGradient id="gFront" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e94560" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#e94560" stop-opacity="0.08"/>
+          </linearGradient>
+          <linearGradient id="gApi" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e94560" stop-opacity="0.5"/>
+            <stop offset="50%" stop-color="#ffb4b4" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#e94560" stop-opacity="0.5"/>
+          </linearGradient>
+          <linearGradient id="gCtrl" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a2a40" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#0f1a2e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="gSvc" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a1a40" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#0f0f2e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="gEng" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e94560" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#ff6b6b" stop-opacity="0.15"/>
+          </linearGradient>
+          <linearGradient id="gAlgo" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2a1a2e" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#1a0f1e" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="gDb" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a2a1a" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#0f1e0f" stop-opacity="1"/>
+          </linearGradient>
+          <!-- 箭头标记 -->
+          <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e94560"/>
+          </marker>
+          <marker id="arrowGray" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7ec8e3"/>
+          </marker>
+          <!-- 发光滤镜 -->
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- ============== 层级 1: 双端前端 ============== -->
+        <!-- Web 端 -->
+        <rect x="30" y="12" width="210" height="56" rx="10" fill="url(#gFront)" stroke="#e94560" stroke-width="1.5"/>
+        <text x="48" y="36" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="11" fill="#e94560" font-weight="700" letter-spacing="2">WEB 前端</text>
+        <text x="48" y="54" font-family="JetBrains Mono,Consolas,monospace" font-size="10" fill="#b8b8c8">Thymeleaf · 原生 JS</text>
+        <!-- 小程序端 -->
+        <rect x="300" y="12" width="210" height="56" rx="10" fill="url(#gFront)" stroke="#e94560" stroke-width="1.5"/>
+        <text x="318" y="36" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="11" fill="#e94560" font-weight="700" letter-spacing="2">微信小程序</text>
+        <text x="318" y="54" font-family="JetBrains Mono,Consolas,monospace" font-size="10" fill="#b8b8c8">WXML / WXSS / JS 原生</text>
+
+        <!-- ============== 层级 2: REST API 条 ============== -->
+        <rect x="100" y="90" width="340" height="28" rx="14" fill="url(#gApi)" stroke="#e94560" stroke-width="1.5" filter="url(#glow)"/>
+        <text x="270" y="109" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="11" fill="#fff" font-weight="700" letter-spacing="1">REST API · /api/** · Token Bearer 认证 · CORS</text>
+
+        <!-- 箭头: Web → API -->
+        <line x1="135" y1="68" x2="135" y2="90" stroke="#e94560" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <!-- 箭头: 小程序 → API -->
+        <line x1="405" y1="68" x2="405" y2="90" stroke="#e94560" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- ============== 层级 3: Controller 层 ============== -->
+        <rect x="30" y="132" width="480" height="82" rx="10" fill="url(#gCtrl)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <text x="48" y="152" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="10" fill="#7ec8e3" font-weight="700" letter-spacing="2">🎛️ CONTROLLER 层 · Spring MVC</text>
+        <!-- Controller 芯片行 1 -->
+        <rect x="48" y="160" width="92" height="22" rx="4" fill="#141428" stroke="rgba(255,255,255,0.1)"/>
+        <text x="94" y="176" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#ccc">HomeCtrl</text>
+        <rect x="148" y="160" width="92" height="22" rx="4" fill="#141428" stroke="rgba(255,255,255,0.1)"/>
+        <text x="194" y="176" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#ccc">SongCtrl</text>
+        <rect x="248" y="160" width="92" height="22" rx="4" fill="#141428" stroke="rgba(255,255,255,0.1)"/>
+        <text x="294" y="176" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#ccc">PlaylistCtrl</text>
+        <rect x="348" y="160" width="92" height="22" rx="4" fill="#141428" stroke="rgba(255,255,255,0.1)"/>
+        <text x="394" y="176" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#ccc">LoginCtrl</text>
+        <!-- Controller 芯片行 2 (REST API 标红) -->
+        <rect x="48" y="186" width="92" height="22" rx="4" fill="rgba(233,69,96,0.15)" stroke="#e94560" stroke-width="1"/>
+        <text x="94" y="202" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#fff" font-weight="600">MusicApiCtrl</text>
+        <rect x="148" y="186" width="92" height="22" rx="4" fill="rgba(233,69,96,0.15)" stroke="#e94560" stroke-width="1"/>
+        <text x="194" y="202" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#fff" font-weight="600">AuthApiCtrl</text>
+        <rect x="248" y="186" width="92" height="22" rx="4" fill="#141428" stroke="rgba(255,255,255,0.1)"/>
+        <text x="294" y="202" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#ccc">AdminCtrl</text>
+        <rect x="348" y="186" width="120" height="22" rx="4" fill="rgba(233,69,96,0.15)" stroke="#e94560" stroke-width="1"/>
+        <text x="408" y="202" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="9" fill="#fff" font-weight="600">AdminRecommendCtrl</text>
+
+        <!-- 箭头: API → Controller -->
+        <line x1="270" y1="118" x2="270" y2="132" stroke="#e94560" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- ============== 层级 4: Service 层 + 推荐引擎 ============== -->
+        <rect x="30" y="232" width="480" height="140" rx="10" fill="url(#gSvc)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <text x="48" y="252" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="10" fill="#b8b8c8" font-weight="700" letter-spacing="2">🧠 SERVICE 层 · 业务逻辑</text>
+
+        <!-- 普通 Service 子区 -->
+        <rect x="48" y="262" width="130" height="30" rx="5" fill="#141428" stroke="rgba(255,255,255,0.08)"/>
+        <text x="113" y="282" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="10" fill="#9898b0">SongService</text>
+        <rect x="188" y="262" width="130" height="30" rx="5" fill="#141428" stroke="rgba(255,255,255,0.08)"/>
+        <text x="253" y="282" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="10" fill="#9898b0">PlaylistService</text>
+        <rect x="328" y="262" width="130" height="30" rx="5" fill="#141428" stroke="rgba(255,255,255,0.08)"/>
+        <text x="393" y="282" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="10" fill="#9898b0">UserService</text>
+
+        <!-- 推荐引擎高亮盒子 (嵌套) -->
+        <rect x="48" y="302" width="444" height="60" rx="8" fill="url(#gEng)" stroke="#e94560" stroke-width="1.5" filter="url(#glow)"/>
+        <text x="64" y="320" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="10" fill="#fff" font-weight="700" letter-spacing="1.5">⚙️ HYBRID RECOMMENDER SERVICE · 推荐引擎</text>
+        <text x="64" y="336" font-family="JetBrains Mono,Consolas,monospace" font-size="8.5" fill="#ffb4b4">动态权重融合 · min-max 归一化 · 冷启动兜底 · 三算法并行</text>
+        <!-- 三个算法嵌套 -->
+        <rect x="64" y="342" width="132" height="14" rx="3" fill="url(#gAlgo)" stroke="#ffb4b4" stroke-width="0.8"/>
+        <text x="130" y="352" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="7.5" fill="#ff7b9c" font-weight="600">CollaborativeRecommender</text>
+        <rect x="204" y="342" width="132" height="14" rx="3" fill="url(#gAlgo)" stroke="#ffb86c" stroke-width="0.8"/>
+        <text x="270" y="352" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="7.5" fill="#ffb86c" font-weight="600">ContentBasedRecommender</text>
+        <rect x="344" y="342" width="132" height="14" rx="3" fill="url(#gAlgo)" stroke="#7ec8e3" stroke-width="0.8"/>
+        <text x="410" y="352" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="7.5" fill="#7ec8e3" font-weight="600">Hot + Random</text>
+
+        <!-- 箭头: Controller → Service -->
+        <line x1="270" y1="214" x2="270" y2="232" stroke="#e94560" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- ============== 层级 5: Spring Data JPA ============== -->
+        <rect x="150" y="386" width="240" height="32" rx="6" fill="#1a2035" stroke="rgba(126,200,227,0.4)" stroke-width="1.2"/>
+        <text x="270" y="406" text-anchor="middle" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="10" fill="#7ec8e3" font-weight="600" letter-spacing="1">🔗 Spring Data JPA Repository</text>
+
+        <!-- 箭头: Service → JPA -->
+        <line x1="270" y1="372" x2="270" y2="386" stroke="#7ec8e3" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+
+        <!-- ============== 层级 6: MySQL 数据库 ============== -->
+        <!-- 数据库圆柱体 -->
+        <ellipse cx="270" cy="438" rx="120" ry="10" fill="url(#gDb)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+        <rect x="150" y="438" width="240" height="52" fill="url(#gDb)" stroke="none"/>
+        <ellipse cx="270" cy="490" rx="120" ry="10" fill="#0f1e0f" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+        <line x1="150" y1="438" x2="150" y2="490" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+        <line x1="390" y1="438" x2="390" y2="490" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+        <text x="270" y="466" text-anchor="middle" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="13" fill="#22c55e" font-weight="700" letter-spacing="2">🗄️  MYSQL 8.0</text>
+        <text x="270" y="482" text-anchor="middle" font-family="JetBrains Mono,Consolas,monospace" font-size="8" fill="#5a8f5a">6 tables · 70 songs · 4 users · 55 interactions</text>
+
+        <!-- 箭头: JPA → DB -->
+        <line x1="270" y1="418" x2="270" y2="438" stroke="#7ec8e3" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+
+        <!-- ============== 侧边标注: 数据流说明 ============== -->
+        <g transform="translate(15, 520)">
+          <text x="0" y="0" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="8.5" fill="#666" font-weight="700">请求流程</text>
+          <line x1="0" y1="6" x2="30" y2="6" stroke="#e94560" stroke-width="1"/>
+          <text x="34" y="9" font-family="JetBrains Mono,Consolas,monospace" font-size="8" fill="#888">HTTP / HTTPS</text>
+
+          <line x1="0" y1="18" x2="30" y2="18" stroke="#7ec8e3" stroke-width="1"/>
+          <text x="34" y="21" font-family="JetBrains Mono,Consolas,monospace" font-size="8" fill="#888">JPA → MySQL</text>
+
+          <line x1="0" y1="30" x2="30" y2="30" stroke="#ffb86c" stroke-width="1"/>
+          <text x="34" y="33" font-family="JetBrains Mono,Consolas,monospace" font-size="8" fill="#888">推荐引擎内部数据流</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 右：技术栈 -->
+    <div>
+      <h2 class="h2">🛠️ 技术栈明细</h2>
+      <div class="grid-cards cols-2" style="gap:10px;">
+        <div class="card">
+          <div class="card-label">Backend</div>
+          <div class="card-title">Spring Boot 3.2.12</div>
+          <div class="card-desc">Spring Security · Spring Data JPA · Kaptcha</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Database</div>
+          <div class="card-title">MySQL 8.0</div>
+          <div class="card-desc">6 tables · Repository 模式</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Web Frontend</div>
+          <div class="card-title">Thymeleaf + 原生 JS</div>
+          <div class="card-desc">14 templates · 自定义 Player 组件</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Mini Program</div>
+          <div class="card-title">微信原生框架</div>
+          <div class="card-desc">6 pages · 4-tabBar · Tab 切换</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Auth</div>
+          <div class="card-title">简化 Token 方案</div>
+          <div class="card-desc">内存存储 · 7天过期 · Bearer Header</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Build</div>
+          <div class="card-title">Maven + Lombok</div>
+          <div class="card-desc">Java 22 · @Data / @Builder</div>
+        </div>
+      </div>
+      <h2 class="h2">⚙️ 性能优化项</h2>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">Gzip 压缩</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">静态资源 7d 缓存</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">DOM 引用缓存</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">播放队列 localStorage</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">CSS 变量统一主题</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">Font display=swap</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">图像 lazy-load</span>
+        <span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">keepalive POST</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 7: DATABASE ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 06 · 数据库设计</div>
+  <h1 class="h1">6 张核心表 · ER 关系</h1>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>表名</th><th>字段数</th><th>关键字段</th><th>用途</th><th>与其他表关系</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>users</code></td>
+          <td>10</td>
+          <td><code>id, username, password, email, role</code></td>
+          <td class="human">用户账户 + 权限</td>
+          <td class="human">1→N playlists, 1→N interactions</td>
+        </tr>
+        <tr>
+          <td><code>songs</code></td>
+          <td>12</td>
+          <td><code>id, title, artist, album, genre, cover_url</code></td>
+          <td class="human">歌曲元数据</td>
+          <td class="human">被 playlist_songs, interactions 引用</td>
+        </tr>
+        <tr>
+          <td><code>playlists</code></td>
+          <td>8</td>
+          <td><code>id, name, user_id, is_public, cover_url</code></td>
+          <td class="human">歌单</td>
+          <td class="human">N→1 users, 1→N playlist_songs</td>
+        </tr>
+        <tr>
+          <td><code>playlist_songs</code></td>
+          <td>6</td>
+          <td><code>playlist_id, song_id, sort_order</code></td>
+          <td class="human">歌单-歌曲关联</td>
+          <td class="human">M→M 中间表</td>
+        </tr>
+        <tr>
+          <td><code>user_song_interactions</code></td>
+          <td>8</td>
+          <td><code>user_id, song_id, play_count, is_liked</code></td>
+          <td class="human">推荐引擎核心输入</td>
+          <td class="human">推荐算法用户-物品交互矩阵</td>
+        </tr>
+        <tr>
+          <td><code>comments</code></td>
+          <td>6</td>
+          <td><code>song_id, user_id, content, like_count</code></td>
+          <td class="human">评论区</td>
+          <td class="human">N→1 songs, N→1 users</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:16px;">
+    <div>
+      <h2 class="h2">🎯 推荐引擎依赖</h2>
+      <div class="code-block" style="font-size:13px;"><pre><span class="cm">// UserSongInteraction — 隐式评分映射</span>
+<span class="cm">// play_count≥1 → +1</span>
+<span class="cm">// is_liked=true → +2</span>
+<span class="cm">// （未来可扩展收藏 +3）</span>
+<span class="kw">SELECT</span> user_id, song_id, play_count, is_liked
+<span class="kw">FROM</span> user_song_interactions
+<span class="kw">WHERE</span> play_count > <span class="num">0</span> <span class="kw">OR</span> is_liked = <span class="kw">true</span>;</pre></div>
+    </div>
+    <div>
+      <h2 class="h2">📋 数据初始化</h2>
+      <div class="body">
+        <span class="mono">DataInitializer.java</span> 启动时自动填充：<br>
+        • 70 首歌曲（10 种风格 × 7 首）<br>
+        • 4 个用户（admin + 3 普通用户）<br>
+        • 55 条交互记录（用户 1-2-3 之间 5-7 首重叠，为协同过滤制造相似用户）
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 8: API ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 06 · REST API 设计</div>
+  <h1 class="h1">17 个 REST 端点 · Token 认证</h1>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:12px;">
+    <div>
+      <h2 class="h2">🔑 认证 API（AuthApiController）</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>METHOD</th><th>PATH</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag" style="background:rgba(34,197,94,.2);color:#22c55e;">POST</span></td><td><code>/api/auth/login</code></td><td class="human">登录 → 返回 token + user</td></tr>
+            <tr><td><span class="tag" style="background:rgba(34,197,94,.2);color:#22c55e;">POST</span></td><td><code>/api/auth/register</code></td><td class="human">注册 → 自动登录</td></tr>
+            <tr><td><span class="tag" style="background:rgba(233,69,96,.2);color:#e94560;">POST</span></td><td><code>/api/auth/logout</code></td><td class="human">登出</td></tr>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/auth/me</code></td><td class="human">获取当前用户</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2 class="h2">🎵 核心 API（MusicApiController）</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>METHOD</th><th>PATH</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/home?userId=</code></td><td class="human">首页聚合（4合1）</td></tr>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/recommend</code></td><td class="human">混合推荐</td></tr>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/songs/hot|new|search|genres</code></td><td class="human">歌曲浏览</td></tr>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/songs/{id}</code></td><td class="human">详情 + 相关推荐</td></tr>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/playlists</code></td><td class="human">热门歌单</td></tr>
+            <tr><td><span class="tag" style="background:rgba(34,197,94,.2);color:#22c55e;">POST</span></td><td><code>/api/songs/{id}/play|like</code></td><td class="human">交互记录</td></tr>
+            <tr><td><span class="tag" style="background:rgba(126,200,227,.2);color:#7ec8e3;">GET</span></td><td><code>/api/users/{userId}/liked</code></td><td class="human">喜欢列表</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:16px;">
+    <div>
+      <h2 class="h2">🔧 诊断 API（AdminRecommendController）</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>PATH</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>/admin/api/recommend/stats</code></td><td class="human">全局统计 + 风格分布</td></tr>
+            <tr><td><code>/admin/api/recommend/diagnose/{uid}</code></td><td class="human">三算法独立推荐 + 用户阶段</td></tr>
+            <tr><td><code>/admin/api/recommend/hybrid</code></td><td class="human">混合推荐最终结果</td></tr>
+            <tr><td><code>/admin/api/recommend/cf|cb</code></td><td class="human">单独算法结果</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2 class="h2">🔐 响应格式与认证</h2>
+      <div class="code-block" style="font-size:13px;"><pre><span class="cm">// 统一响应结构</span>
+<span class="kw">interface</span> ApiResponse {
+  code:   <span class="num">0</span> | <span class="num">401</span> | <span class="num">404</span>;  <span class="cm">// 0=成功</span>
+  msg:    string;
+  data:   any;
+}
+
+<span class="cm">// Token 认证（Bearer Header）</span>
+Authorization: Bearer 0dc0a1d1fdc247f3b0d842ea574d3908
+
+<span class="cm">// SecurityConfig: /api/** permitAll + CORS + ignore CSRF</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 9: PROGRESS ==================== -->
+<section class="slide">
+  <div class="kicker">Chapter 07 · 进度安排</div>
+  <h1 class="h1">16 周毕业设计周期 · 已完成 11 周</h1>
+
+  <div style="display:grid; grid-template-columns:2fr 1fr; gap:28px;">
+    <div>
+      <div class="timeline">
+        <div class="timeline-item done">
+          <div class="timeline-time">第 1-3 周 ✅</div>
+          <div class="timeline-content">文献调研 · 开题报告撰写与答辩</div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-time">第 4-6 周 ✅</div>
+          <div class="timeline-content">Spring Boot 骨架 · 数据库 6 张表 · Security + JPA · 歌曲 CRUD</div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-time">第 7-9 周 ✅</div>
+          <div class="timeline-content">协同过滤 UserCF · 内容推荐 CB · 混合引擎 Hybrid + 动态权重</div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-time">第 10-11 周 ✅</div>
+          <div class="timeline-content">歌单/评论/搜索 · Thymeleaf 14 模板 + Player 组件 · REST API 17 端点 · 小程序端 6 页面 · 管理后台诊断页</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">第 12-13 周 🔄</div>
+          <div class="timeline-content">算法效果评估（接入 Last.fm / MovieLens 对比）· 功能测试 · Bug 修复 · 性能调优</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-time">第 14-16 周 📝</div>
+          <div class="timeline-content">毕业论文撰写 · 答辩 PPT · 系统演示准备</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h2 class="h2">📦 已完成交付物</h2>
+      <div class="grid-cards" style="gap:8px;">
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-label">Backend</div>
+          <div class="card-title" style="font-size:15px;">12 个 Java 文件</div>
+          <div class="card-desc" style="font-size:12px;">3 Controller 推荐引擎 + 3 REST + SecurityConfig</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-label">Web Frontend</div>
+          <div class="card-title" style="font-size:15px;">14 Thymeleaf 模板</div>
+          <div class="card-desc" style="font-size:12px;">6 fragment 组件 + 自定义 Player</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-label">Mini Program</div>
+          <div class="card-title" style="font-size:15px;">6 页面 + request.js</div>
+          <div class="card-desc" style="font-size:12px;">原生 WXML/WXSS/JS · 4-tabBar</div>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-label">Database</div>
+          <div class="card-title" style="font-size:15px;">70 songs · 4 users · 55 interactions</div>
+          <div class="card-desc" style="font-size:12px;">DataInitializer 自动填充</div>
+        </div>
+      </div>
+
+      <h2 class="h2">⚠️ 剩余风险</h2>
+      <div class="body" style="font-size:14px; line-height:1.7;">
+        <strong>算法评估</strong>：需接入公开数据集做对比实验<br>
+        <strong>真机调试</strong>：小程序需配真机 URL<br>
+        <strong>论文</strong>：按学校格式 + 查重 ≤ 15%
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 10: Q&A ==================== -->
+<section class="slide">
+  <div class="cover-bg"></div>
+  <div class="cover-grid"></div>
+  <div style="position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+    <div style="font-size:80px; margin-bottom:20px; filter: drop-shadow(0 0 30px rgba(233,69,96,.4));">🎤</div>
+    <div class="cover-title">感谢各位老师！</div>
+    <div style="font-size:20px; color:#888; margin-top:10px; letter-spacing:.04em;">欢迎提问 · Q & A</div>
+    <div style="display:flex; gap:24px; margin-top:40px; font-size:14px; color:#666;">
+      <span>🔗 Spring Boot Backend</span>
+      <span>·</span>
+      <span>📱 微信小程序</span>
+      <span>·</span>
+      <span>🧠 混合推荐引擎</span>
+    </div>
+  </div>
+</section>
+
+</div><!-- /canvas -->
+
+<script>
+const canvas = document.getElementById('canvas');
+const slides = document.querySelectorAll('.slide');
+const dotsWrap = document.getElementById('dots');
+const cur = document.getElementById('cur');
+const tot = document.getElementById('tot');
+
+let idx = 0;
+const total = slides.length;
+tot.textContent = String(total).padStart(2,'0');
+
+// 生成导航点
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => go(i);
+  dotsWrap.appendChild(d);
+}
+const dots = document.querySelectorAll('.dot');
+
+function go(n) {
+  slides[idx].classList.remove('active');
+  dots[idx].classList.remove('active');
+  idx = (n + total) % total;
+  slides[idx].classList.add('active');
+  dots[idx].classList.add('active');
+  cur.textContent = String(idx + 1).padStart(2,'0');
+  slides[idx].scrollTop = 0;
+}
+function next() { go(idx + 1); }
+function prev() { go(idx - 1); }
+
+// 键盘
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') next();
+  if (e.key === 'ArrowLeft') prev();
+});
+// 触摸
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) dx < 0 ? next() : prev();
+});
+
+// 缩放
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const scale = Math.min(w / 1280, h / 720) * 0.96;
+  canvas.style.transform = 'translate(-50%,-50%) scale(' + scale + ')';
+}
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>

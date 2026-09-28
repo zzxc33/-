@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 智能音乐推荐与播放平台</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+
+    <!-- ====== 背景动画 ====== -->
+    <div class="background-animation"></div>
+
+    <!-- ====== 音乐音符粒子 ====== -->
+    <div class="music-notes"></div>
+
+    <!-- ====== 波形背景 ====== -->
+    <div class="wave-bg">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="rgba(245, 158, 11, 0.08)" d="M0,160 C320,280 480,80 720,160 C960,240 1120,80 1440,160 L1440,320 L0,320 Z">
+                <animate attributeName="d" dur="12s" repeatCount="indefinite"
+                    values="M0,160 C320,280 480,80 720,160 C960,240 1120,80 1440,160 L1440,320 L0,320 Z;
+                            M0,200 C320,80 480,240 720,120 C960,0 1120,200 1440,120 L1440,320 L0,320 Z;
+                            M0,120 C320,240 480,40 720,200 C960,360 1120,120 1440,200 L1440,320 L0,320 Z;
+                            M0,160 C320,280 480,80 720,160 C960,240 1120,80 1440,160 L1440,320 L0,320 Z">
+                </animate>
+            </path>
+            <path fill="rgba(167, 139, 250, 0.05)" d="M0,240 C320,120 480,280 720,200 C960,120 1120,240 1440,200 L1440,320 L0,320 Z">
+                <animate attributeName="d" dur="10s" repeatCount="indefinite"
+                    values="M0,240 C320,120 480,280 720,200 C960,120 1120,240 1440,200 L1440,320 L0,320 Z;
+                            M0,200 C320,280 480,120 720,240 C960,360 1120,160 1440,240 L1440,320 L0,320 Z;
+                            M0,260 C320,180 480,320 720,160 C960,0 1120,280 1440,160 L1440,320 L0,320 Z;
+                            M0,240 C320,120 480,280 720,200 C960,120 1120,240 1440,200 L1440,320 L0,320 Z">
+                </animate>
+            </path>
+        </svg>
+    </div>
+
+    <!-- ====== 登录容器 ====== -->
+    <div class="login-container">
+        <div class="login-card">
+
+            <!-- 左侧品牌区 -->
+            <div class="login-brand">
+                <div class="brand-icon">🎵</div>
+                <h1 class="brand-title">音乐推荐平台</h1>
+                <p class="brand-subtitle">基于AI智能算法的个性化音乐推荐系统，发现属于你的音乐世界</p>
+                <div class="brand-features">
+                    <div class="brand-feature-item">
+                        <span class="feature-icon">🧠</span>
+                        <span>AI 智能推荐，懂你所爱</span>
+                    </div>
+                    <div class="brand-feature-item">
+                        <span class="feature-icon">🎶</span>
+                        <span>海量音乐曲库，随心畅听</span>
+                    </div>
+                    <div class="brand-feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>个性化歌单，精准匹配</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧登录表单 -->
+            <div class="login-form-section">
+                <div class="form-header">
+                    <h2>欢迎回来</h2>
+                    <p>登录您的账号，开启音乐之旅</p>
+                </div>
+
+                <!-- 错误提示 -->
+                <div id="formError" class="error-message" th:if="${error}" th:text="${error}">
+                    <!-- 后端错误消息在此显示 -->
+                </div>
+                <div id="formSuccess" class="success-message" th:if="${message}" th:text="${message}">
+                    <!-- 成功消息在此显示 -->
+                </div>
+                <!-- 切换账号提示 -->
+                <div id="switchNotice" class="switch-notice" th:if="${isSwitch}" th:style="'display:flex;'">
+                    <span class="switch-icon">🔄</span>
+                    <span class="switch-text">已退出当前账号，请使用其他账号登录</span>
+                </div>
+
+                <!-- 登录表单 -->
+                <form id="loginForm" th:action="@{/doLogin}" method="post">
+                    <!-- 用户名 -->
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">👤</span>
+                            <input type="text" id="username" name="username"
+                                   placeholder="请输入用户名" autocomplete="username"
+                                   maxlength="50" required>
+                        </div>
+                    </div>
+
+                    <!-- 密码 -->
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" id="password" name="password"
+                                   placeholder="请输入密码" autocomplete="current-password"
+                                   maxlength="100" required>
+                            <button type="button" class="toggle-password" tabindex="-1">👁️</button>
+                        </div>
+                    </div>
+
+                    <!-- 验证码 -->
+                    <div class="form-group">
+                        <label for="captcha">验证码</label>
+                        <div class="captcha-wrapper">
+                            <div class="input-wrapper">
+                                <span class="input-icon">🔑</span>
+                                <input type="text" id="captcha" name="captcha"
+                                       placeholder="请输入验证码" autocomplete="off"
+                                       maxlength="4" required>
+                            </div>
+                            <img id="captchaImg" class="captcha-image" src="/captcha" alt="验证码" title="点击刷新验证码">
+                        </div>
+                    </div>
+
+                    <!-- 表单选项 -->
+                    <div class="form-options">
+                        <label class="remember-me">
+                            <input type="checkbox" id="rememberMe" name="rememberMe">
+                            <span class="checkmark"></span>
+                            记住我
+                        </label>
+                        <a href="#" class="forgot-password">忘记密码？</a>
+                    </div>
+
+                    <!-- 登录按钮 -->
+                    <button type="submit" id="loginBtn" class="login-btn">
+                        <span class="btn-text">登 录</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+
+                <!-- 注册链接 -->
+                <div class="register-link">
+                    还没有账号？
+                    <a th:href="@{/register}">立即注册</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ====== JavaScript ====== -->
+    <script src="/js/login.js"></script>
+    <script>
+        // 页面加载后，显示后端传递的错误/成功消息
+        document.addEventListener('DOMContentLoaded', function () {
+            var errorDiv = document.getElementById('formError');
+            if (errorDiv && errorDiv.textContent.trim()) {
+                errorDiv.classList.add('show');
+            }
+            var successDiv = document.getElementById('formSuccess');
+            if (successDiv && successDiv.textContent.trim()) {
+                successDiv.classList.add('show');
+            }
+            // 切换账号提示 - model属性 isSwitch 为 true 时显示
+            var switchNotice = document.getElementById('switchNotice');
+            if (switchNotice && switchNotice.style.display !== 'none') {
+                // 已通过 th:style 显示，这里做额外动画触发
+            }
+        });
+    </script>
+
+</body>
+</html>

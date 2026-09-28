@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推荐引擎诊断 - 管理员后台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        .algo-section { margin-bottom: 28px; }
+        .algo-section h3 {
+            font-size: 15px; font-weight: 600; color: var(--text-primary);
+            margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;
+        }
+        .algo-badge {
+            font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 500;
+        }
+        .algo-badge.cf { background: rgba(245,158,11,0.15); color: #F59E0B; }
+        .algo-badge.cb { background: rgba(139,92,246,0.15); color: #8B5CF6; }
+        .algo-badge.hybrid { background: rgba(6,182,212,0.15); color: #06B6D4; }
+        .algo-badge.pop { background: rgba(239,68,68,0.15); color: #EF4444; }
+        .algo-badge.explore { background: rgba(34,197,94,0.15); color: #22C55E; }
+        .song-row {
+            display: grid; grid-template-columns: 28px 1fr auto; gap: 12px;
+            padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px;
+        }
+        .song-row:last-child { border-bottom: none; }
+        .song-rank { color: var(--text-tertiary); font-weight: 600; text-align: center; padding-top: 1px; }
+        .song-meta { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+        .song-genre {
+            display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 8px;
+            background: rgba(255,255,255,0.05); color: var(--text-secondary);
+        }
+        .song-stats { color: var(--text-tertiary); font-size: 11px; text-align: right; }
+        .weight-bar {
+            height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08);
+            margin-top: 6px; overflow: hidden;
+        }
+        .weight-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        .stage-pill {
+            display: inline-block; padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 500;
+        }
+        .stage-cold { background: rgba(239,68,68,0.15); color: #EF4444; }
+        .stage-sparse { background: rgba(245,158,11,0.15); color: #F59E0B; }
+        .stage-normal { background: rgba(34,197,94,0.15); color: #22C55E; }
+    </style>
+</head>
+<body>
+<div class="admin-layout">
+    <!-- 侧边栏（复用 dashboard 的，active 换成 recommend）-->
+    <aside class="admin-sidebar">
+        <div class="logo">
+            <a href="/admin"><div class="logo-icon">🎵</div>
+                <div><div class="logo-text">Admin<span>Panel</span></div><div class="logo-sub">Management Console</div></div>
+            </a>
+        </div>
+        <nav>
+            <a href="/admin"><span class="nav-icon">📊</span>控制台</a>
+            <a href="/admin/songs"><span class="nav-icon">🎵</span>歌曲管理</a>
+            <a href="/admin/users"><span class="nav-icon">👤</span>用户管理</a>
+            <a href="/admin/recommend" class="active"><span class="nav-icon">⚙️</span>推荐引擎</a>
+            <a href="/index"><span class="nav-icon">🏠</span>返回前台</a>
+        </nav>
+    </aside>
+    <main class="admin-main">
+        <div class="admin-header">
+            <h1><span class="header-icon">⚙️</span>推荐引擎诊断</h1>
+            <div class="admin-user">
+                <div class="avatar" th:text="${admin != null ? admin.nickname.substring(0,1) : 'A'}">A</div>
+                <div><div class="admin-name" th:text="${admin != null ? admin.nickname : '管理员'}">管理员</div><div class="admin-role">SUPER ADMIN</div></div>
+            </div>
+        </div>
+
+        <!-- 全局统计卡 -->
+        <div class="stats-grid" id="stats-cards">
+            <div class="stat-card amber">
+                <div class="stat-icon">👥</div>
+                <div class="number" id="stat-users">-</div>
+                <div class="label">注册用户</div>
+            </div>
+            <div class="stat-card violet">
+                <div class="stat-icon">🎵</div>
+                <div class="number" id="stat-songs">-</div>
+                <div class="label">歌曲总数</div>
+            </div>
+            <div class="stat-card cyan">
+                <div class="stat-icon">🔁</div>
+                <div class="number" id="stat-interactions">-</div>
+                <div class="label">交互记录</div>
+            </div>
+            <div class="stat-card amber">
+                <div class="stat-icon">⚡</div>
+                <div class="number" id="stat-active">-</div>
+                <div class="label">活跃用户</div>
+            </div>
+        </div>
+
+        <!-- 风格分布 -->
+        <div class="admin-card">
+            <h3>🎶 歌曲风格分布</h3>
+            <div id="genre-bars" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
+        <!-- 诊断面板 -->
+        <div class="admin-card">
+            <h3>🔍 用户推荐诊断</h3>
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:18px;">
+                <label style="font-size:13px; color:var(--text-secondary);">选择用户：</label>
+                <select id="user-select" class="variant-primary" style="padding:8px 16px; border-radius:10px; background:rgba(245,158,11,0.1); color:#F59E0B; border:1px solid rgba(245,158,11,0.2); font-size:13px; cursor:pointer;"></select>
+                <label style="font-size:13px; color:var(--text-secondary);">推荐数量：</label>
+                <input type="number" id="limit-input" value="8" min="3" max="20" style="width:60px; padding:8px 12px; border-radius:10px; background:rgba(139,92,246,0.1); color:#8B5CF6; border:1px solid rgba(139,92,246,0.2); font-size:13px;">
+                <button onclick="runDiagnose()" style="padding:8px 20px; border-radius:10px; background:linear-gradient(135deg,#F59E0B,#8B5CF6); color:white; border:none; font-size:13px; font-weight:600; cursor:pointer;">🔎 运行诊断</button>
+            </div>
+
+            <!-- 用户基本信息 -->
+            <div id="diag-user-info" style="display:none; padding:14px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:18px; font-weight:600; color:var(--text-primary);" id="diag-username">-</div>
+                        <div style="font-size:12px; color:var(--text-tertiary);" id="diag-role">-</div>
+                    </div>
+                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
+                    <div>
+                        <div style="font-size:11px; color:var(--text-tertiary);">交互记录</div>
+                        <div style="font-size:18px; font-weight:600; color:#F59E0B;" id="diag-interactions">-</div>
+                    </div>
+                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
+                    <div>
+                        <div style="font-size:11px; color:var(--text-tertiary);">总播放</div>
+                        <div style="font-size:18px; font-weight:600; color:#8B5CF6;" id="diag-plays">-</div>
+                    </div>
+                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
+                    <div>
+                        <div style="font-size:11px; color:var(--text-tertiary);">点赞数</div>
+                        <div style="font-size:18px; font-weight:600; color:#EF4444;" id="diag-likes">-</div>
+                    </div>
+                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
+                    <div>
+                        <div style="font-size:11px; color:var(--text-tertiary);">当前阶段</div>
+                        <div class="stage-pill" id="diag-stage">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 权重分配 -->
+            <div id="diag-weights" style="display:none; margin-bottom:24px;">
+                <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">⚖️ 当前权重分配</div>
+                <div id="weight-bars"></div>
+            </div>
+
+            <!-- 三种算法对比 -->
+            <div id="diag-algos" style="display:none; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <!-- 协同过滤 -->
+                <div class="algo-section" style="grid-column:1 / 2;">
+                    <h3><span class="algo-badge cf">🧠 CF</span> 协同过滤 (UserCF + ItemCF)</h3>
+                    <div id="cf-list" style="max-height:300px; overflow-y:auto;"></div>
+                </div>
+                <!-- 内容推荐 -->
+                <div class="algo-section" style="grid-column:2 / 3;">
+                    <h3><span class="algo-badge cb">🎵 CB</span> 内容推荐 (风格+歌手+专辑)</h3>
+                    <div id="cb-list" style="max-height:300px; overflow-y:auto;"></div>
+                </div>
+            </div>
+
+            <!-- 混合推荐最终 -->
+            <div id="diag-hybrid" style="display:none; margin-top:12px;">
+                <div class="algo-section">
+                    <h3><span class="algo-badge hybrid">✨ HYBRID</span> 混合推荐 最终融合结果</h3>
+                    <div id="hybrid-list" style="max-height:400px; overflow-y:auto;"></div>
+                </div>
+            </div>
+
+            <div id="diag-empty" style="text-align:center; padding:40px; color:var(--text-tertiary); font-size:13px;">
+                👆 选择一个用户，点击"运行诊断"查看三种算法的推荐详情
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // ========== 全局统计 ==========
+    async function loadStats() {
+        try {
+            const r = await fetch('/admin/api/recommend/stats');
+            const d = await r.json();
+            document.getElementById('stat-users').textContent = d.totalUsers;
+            document.getElementById('stat-songs').textContent = d.totalSongs;
+            document.getElementById('stat-interactions').textContent = d.totalInteractions;
+            document.getElementById('stat-active').textContent = d.activeUsers;
+            // 风格分布条
+            const gb = document.getElementById('genre-bars');
+            const maxG = Math.max(...Object.values(d.genreDistribution));
+            gb.innerHTML = Object.entries(d.genreDistribution).map(([g,c]) => {
+                const pct = (c / maxG * 100).toFixed(0);
+                return `<div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:70px; font-size:12px; color:var(--text-secondary); flex-shrink:0;">${g || '其他'}</div>
+                    <div style="flex:1; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
+                        <div style="width:${pct}%; height:100%; background:linear-gradient(90deg,#F59E0B,#8B5CF6); border-radius:4px;"></div>
+                    </div>
+                    <div style="width:36px; text-align:right; font-size:12px; color:var(--text-tertiary);">${c}</div>
+                </div>`;
+            }).join('');
+        } catch(e) { console.error('stats error', e); }
+    }
+
+    // ========== 用户下拉 ==========
+    // 用户下拉已由下方 Thymeleaf 渲染，initUsers 保留为空占位
+    function initUsers() {
+        // 直接复用 Thymeleaf 注入的 users 变量（见下方 th:inline script）
+    }
+</script>
+<script th:inline="javascript">
+    const users = /*[[${users}]]*/ [];
+    const sel = document.getElementById('user-select');
+    users.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `${u.id}. ${u.username}${u.nickname ? ' (' + u.nickname + ')' : ''}${u.role === 'ROLE_ADMIN' ? ' 🔑' : ''}`;
+        sel.appendChild(opt);
+    });
+    sel.value = '3'; // 默认 admin
+    loadStats();
+    // runDiagnose() 延迟到下方 script 块定义后再调用
+</script>
+<script>
+    // ========== 运行诊断 ==========
+    async function runDiagnose() {
+        const userId = document.getElementById('user-select').value;
+        const limit = parseInt(document.getElementById('limit-input').value) || 8;
+        if (!userId) return;
+
+        document.getElementById('diag-empty').style.display = 'none';
+        document.getElementById('diag-user-info').style.display = 'none';
+        document.getElementById('diag-weights').style.display = 'none';
+        document.getElementById('diag-algos').style.display = 'none';
+        document.getElementById('diag-hybrid').style.display = 'none';
+
+        try {
+            const r = await fetch(`/admin/api/recommend/diagnose/${userId}?limit=${limit}`);
+            const d = await r.json();
+            renderDiagnose(d);
+        } catch(e) {
+            alert('诊断失败: ' + e.message);
+        }
+    }
+
+    function renderDiagnose(d) {
+        // 用户信息
+        const u = d.user || {};
+        document.getElementById('diag-username').textContent = u.username || '-';
+        document.getElementById('diag-role').textContent = u.role === 'ROLE_ADMIN' ? '🔑 管理员' : '👤 普通用户';
+        document.getElementById('diag-interactions').textContent = d.interactionCount;
+        document.getElementById('diag-plays').textContent = d.interactionDetail?.playCount || 0;
+        document.getElementById('diag-likes').textContent = d.interactionDetail?.likedCount || 0;
+        const stage = document.getElementById('diag-stage');
+        stage.textContent = d.userStage;
+        stage.className = 'stage-pill ' + (d.userStage.includes('冷启动') ? 'stage-cold' : d.userStage.includes('稀疏') ? 'stage-sparse' : 'stage-normal');
+        document.getElementById('diag-user-info').style.display = 'block';
+
+        // 权重（根据 interactionCount 推断）
+        const ic = d.interactionCount;
+        let weights;
+        if (ic === 0) {
+            weights = [{label:'🔥 热门', cls:'pop', pct:50}, {label:'🎲 随机探索', cls:'explore', pct:50}];
+        } else if (ic <= 5) {
+            weights = [{label:'🧠 协同过滤', cls:'cf', pct:20}, {label:'🎵 内容推荐', cls:'cb', pct:50}, {label:'🔥 热门', cls:'pop', pct:20}, {label:'🎲 随机探索', cls:'explore', pct:10}];
+        } else {
+            weights = [{label:'🧠 协同过滤', cls:'cf', pct:50}, {label:'🎵 内容推荐', cls:'cb', pct:20}, {label:'🔥 热门', cls:'pop', pct:15}, {label:'🎲 随机探索', cls:'explore', pct:15}];
+        }
+        const wb = document.getElementById('weight-bars');
+        wb.innerHTML = weights.map(w => `
+            <div style="margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span style="color:var(--text-secondary);">${w.label}</span>
+                    <span style="color:var(--text-tertiary);">${w.pct}%</span>
+                </div>
+                <div class="weight-bar">
+                    <div class="weight-fill" style="width:${w.pct}%; background:${w.cls === 'cf' ? '#F59E0B' : w.cls === 'cb' ? '#8B5CF6' : w.cls === 'pop' ? '#EF4444' : '#22C55E'};"></div>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('diag-weights').style.display = 'block';
+
+        // CF & CB
+        renderSongList('cf-list', d.collaborativeFiltering?.songs || []);
+        renderSongList('cb-list', d.contentBased?.songs || []);
+        document.getElementById('diag-algos').style.display = 'grid';
+
+        // 最终融合
+        renderSongList('hybrid-list', d.hybridFinal?.songs || []);
+        document.getElementById('diag-hybrid').style.display = 'block';
+    }
+
+    function renderSongList(elId, songs) {
+        const el = document.getElementById(elId);
+        if (!songs.length) { el.innerHTML = '<div style="color:var(--text-tertiary); font-size:12px; padding:12px 0;">无推荐结果</div>'; return; }
+        el.innerHTML = songs.map((s, i) => `
+            <div class="song-row">
+                <div class="song-rank">${i+1}</div>
+                <div>
+                    <div style="font-weight:500; color:var(--text-primary);">${escapeHtml(s.title)}</div>
+                    <div class="song-meta">${escapeHtml(s.artist)} <span class="song-genre">${escapeHtml(s.genre || '-')}</span></div>
+                </div>
+                <div class="song-stats">▶ ${(s.playCount || 0).toLocaleString()} ❤ ${(s.likeCount || 0).toLocaleString()}</div>
+            </div>
+        `).join('');
+    }
+
+    function escapeHtml(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // 页面加载完成后自动运行一次诊断（默认用户）
+    runDiagnose();
+</script>
+</body>
+</html>

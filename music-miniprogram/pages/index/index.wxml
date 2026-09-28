@@ -1,0 +1,81 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <!-- 顶部问候 -->
+  <view class="greeting">
+    <text class="hello">{{greeting}}</text>
+    <text class="sub">发现属于你的音乐</text>
+  </view>
+
+  <!-- 风格快捷入口 -->
+  <scroll-view scroll-x class="genre-scroll" show-scrollbar="{{false}}">
+    <view
+      wx:for="{{genres}}"
+      wx:key="*this"
+      class="genre-tag {{currentGenre === item ? 'active' : ''}}"
+      data-genre="{{item}}"
+      bindtap="filterByGenre"
+    >{{item}}</view>
+  </scroll-view>
+
+  <!-- 个性化推荐 -->
+  <view class="section" wx:if="{{recommendList.length}}">
+    <view class="section-title">为你推荐 🎧</view>
+    <scroll-view scroll-x class="song-scroll" show-scrollbar="{{false}}">
+      <view
+        wx:for="{{recommendList}}"
+        wx:key="id"
+        class="song-card"
+        data-song="{{item}}"
+        bindtap="goDetail"
+      >
+        <image
+          class="song-cover"
+          src="{{item.coverUrl || ''}}"
+          mode="aspectFill"
+          lazy-load="{{true}}"
+        />
+        <text class="song-title">{{item.title}}</text>
+        <text class="song-artist">{{item.artist}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 热门歌曲 -->
+  <view class="section">
+    <view class="section-title">🔥 热门歌曲</view>
+    <block wx:for="{{hotList}}" wx:key="id" wx:for-index="idx">
+      <view class="song-row" data-song="{{item}}" bindtap="goDetail">
+        <text class="rank {{idx < 3 ? 'top3' : ''}}">{{idx + 1}}</text>
+        <image
+          class="row-cover"
+          src="{{item.coverUrl || ''}}"
+          mode="aspectFill"
+        />
+        <view class="row-info flex-1">
+          <text class="row-title">{{item.title}}</text>
+          <text class="row-sub">{{item.artist}} · {{item.album || '未知专辑'}}</text>
+        </view>
+        <text class="row-count">▶ {{item.playCount}}</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- 最新歌曲 -->
+  <view class="section">
+    <view class="section-title">✨ 最新上线</view>
+    <block wx:for="{{newList}}" wx:key="id">
+      <view class="song-row" data-song="{{item}}" bindtap="goDetail">
+        <view class="rank dot"></view>
+        <image
+          class="row-cover"
+          src="{{item.coverUrl || ''}}"
+          mode="aspectFill"
+        />
+        <view class="row-info flex-1">
+          <text class="row-title">{{item.title}}</text>
+          <text class="row-sub">{{item.artist}} · {{item.genre}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

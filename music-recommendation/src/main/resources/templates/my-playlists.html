@@ -1,0 +1,48 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='我的歌单 - 智能音乐推荐')}"></head>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='playlists')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;">
+                <div>
+                    <h1 class="page-title" style="margin-bottom: 4px;">📋 我的歌单</h1>
+                    <p class="page-subtitle" style="margin-bottom: 0;">管理你的音乐收藏</p>
+                </div>
+                <a href="/playlist/create" class="btn btn-primary">➕ 新建歌单</a>
+            </div>
+
+            <div th:if="${#lists.isEmpty(playlists)}">
+                <div class="card">
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h3>还没有歌单</h3>
+                        <p>创建你的第一个歌单，开始收藏喜欢的音乐</p>
+                        <a href="/playlist/create" class="btn btn-primary" style="margin-top: 16px;">🎵 创建歌单</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="playlist-grid" th:unless="${#lists.isEmpty(playlists)}">
+                <div class="playlist-card" th:each="playlist : ${playlists}"
+                     onclick="window.location.href='/playlist/' + ${playlist.id}">
+                    <div class="cover">📋</div>
+                    <div class="playlist-name" th:text="${playlist.name}">歌单名称</div>
+                    <div class="playlist-info">
+                        <span th:text="${playlist.description} ?: '暂无描述'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/player :: player}"></div>
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+</body>
+</html>

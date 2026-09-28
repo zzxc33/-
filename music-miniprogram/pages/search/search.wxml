@@ -1,0 +1,50 @@
+<!--pages/search/search.wxml-->
+<view class="container">
+  <!-- 搜索框 -->
+  <view class="search-bar">
+    <input
+      class="search-input"
+      value="{{keyword}}"
+      placeholder="搜索歌曲、歌手..."
+      placeholder-class="placeholder"
+      confirm-type="search"
+      bindinput="onInput"
+      bindconfirm="onConfirm"
+    />
+    <view wx:if="{{keyword}}" class="clear-btn" bindtap="clearKeyword">✕</view>
+    <view class="search-btn" bindtap="doSearch">搜索</view>
+  </view>
+
+  <!-- 热门搜索 -->
+  <view wx:if="{{!keyword && !results.length}}" class="section">
+    <view class="section-title">热门搜索</view>
+    <view class="hot-keywords">
+      <view
+        wx:for="{{hotKeywords}}"
+        wx:key="*this"
+        class="hot-keyword"
+        data-k="{{item}}"
+        bindtap="useHotKeyword"
+      >{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view wx:if="{{results.length}}" class="section">
+    <view class="section-title">搜索结果（{{results.length}}）</view>
+    <block wx:for="{{results}}" wx:key="id">
+      <view class="song-row" data-song="{{item}}" bindtap="goDetail">
+        <image class="row-cover" src="{{item.coverUrl || ''}}" mode="aspectFill" />
+        <view class="row-info flex-1">
+          <text class="row-title">{{item.title}}</text>
+          <text class="row-sub">{{item.artist}} · {{item.album || ''}} · {{item.genre}}</text>
+        </view>
+        <text class="row-count">▶ {{item.playCount}}</text>
+      </view>
+    </block>
+  </view>
+
+  <view wx:if="{{keyword && !loading && !results.length}}" class="empty">
+    <text>没有找到相关歌曲 😔</text>
+  </view>
+</view>

@@ -1,0 +1,93 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='藝人詳情')}"></head>
+<body class="bg-dark">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/index}">🎵 智能音樂推薦</a>
+        <div class="d-flex gap-2">
+            <a th:href="@{/ranking}" class="btn btn-sm btn-outline-warning">排行榜</a>
+            <a th:href="@{/recommend/daily}" class="btn btn-sm btn-outline-info">每日推薦</a>
+        </div>
+    </div>
+</nav>
+
+<section class="container py-4">
+    <!-- 藝人 Hero -->
+    <div class="rounded-4 p-4 mb-4 d-flex align-items-center gap-4"
+         style="background: linear-gradient(135deg, #6366f122, #a78bfa22, #ec489922); border: 1px solid #ffffff1a;">
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+             style="width:96px;height:96px;background:linear-gradient(135deg,#6366f1,#ec4899);font-size:40px;"
+             th:text="${artist.charAt(0)}">J</div>
+        <div class="flex-grow-1">
+            <h1 class="display-6 fw-bold text-white mb-1" th:text="${artist}"></h1>
+            <div class="text-white-50 small mb-2">
+                <span th:if="${found}">🎵 <span th:text="${totalSongs}">0</span> 首歌曲</span>
+                <span th:if="${found}">  ·  ▶ <span th:text="${totalPlays}">0</span> 次播放</span>
+                <span th:if="${found}">  ·  ♥ <span th:text="${totalLikes}">0</span> 次點贊</span>
+                <span th:if="${found}">  ·  主打風格：<span th:text="${topGenre}">流行</span></span>
+                <span th:if="${!found}">⚠️ 數據庫中未找到此藝人的歌曲，顯示搜索結果</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 藝人簡介 -->
+    <div class="card bg-dark border-secondary mb-4">
+        <div class="card-body">
+            <h5 class="text-white fw-bold mb-3">📖 藝人簡介</h5>
+            <p class="text-white-50 mb-0 lh-lg" th:text="${bio}"></p>
+        </div>
+    </div>
+
+    <!-- 歌曲列表 -->
+    <h3 class="h4 fw-bold text-white mb-3" th:text="${found} ? '🎶 該藝人所有歌曲' : '🔍 搜索結果'">歌曲</h3>
+
+    <div th:if="${songs != null and !songs.isEmpty()}" class="list-group gap-1">
+        <div th:each="song,stat : ${songs}"
+             class="list-group-item list-group-item-action bg-dark border-secondary text-white d-flex align-items-center gap-3 hover-row"
+             style="border-radius: 8px; transition: .15s;">
+            <span class="text-white-50" style="width:28px;" th:text="${(currentPage - 1) * 15 + stat.count}">1</span>
+            <a th:href="@{/song/{id}(id=${song.id})}" class="text-decoration-none">
+                <img th:if="${song.coverUrl}" th:src="${song.coverUrl}"
+                     style="width:48px;height:48px;object-fit:cover;border-radius:6px;" alt="">
+                <div th:if="${!song.coverUrl}"
+                     class="d-flex align-items-center justify-content-center bg-secondary text-white"
+                     style="width:48px;height:48px;border-radius:6px;font-size:18px;">🎵</div>
+            </a>
+            <div class="flex-grow-1">
+                <a th:href="@{/song/{id}(id=${song.id})}"
+                   class="text-decoration-none text-white fw-semibold text-truncate d-block hover:text-warning"
+                   th:text="${song.title}"></a>
+                <span class="text-white-50 small" th:text="${song.genre}"></span>
+            </div>
+            <span class="text-white-50 small d-none d-md-inline" th:text="${song.duration}">3:30</span>
+            <span class="text-white-50 small text-end" style="min-width:70px;">
+                ▶ <span th:text="${song.playCount}">0</span>
+            </span>
+        </div>
+    </div>
+
+    <div th:if="${songs == null or songs.isEmpty()}" class="text-center py-5 text-white-50">
+        <div class="display-4 mb-2">😶‍🌫️</div>
+        <div>暫無該藝人的歌曲</div>
+    </div>
+
+    <!-- 分頁 -->
+    <div th:if="${found and totalPages > 1}" class="d-flex justify-content-center gap-2 mt-4">
+        <a th:if="${hasPrev}" th:href="@{/artist/{name}(name=${artist}, page=${currentPage - 1})}"
+           class="btn btn-outline-secondary btn-sm">← 上一頁</a>
+        <span class="text-white-50 align-self-center">
+            第 <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span> 頁
+        </span>
+        <a th:if="${hasNext}" th:href="@{/artist/{name}(name=${artist}, page=${currentPage + 1})}"
+           class="btn btn-outline-secondary btn-sm">下一頁 →</a>
+    </div>
+</section>
+
+<style>
+    .bg-dark { background: #121212 !important; }
+    body { background: #0a0a0a; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .hover-row:hover { background: rgba(167,139,250,.08) !important; }
+</style>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='分类浏览 - 智能音乐推荐')}"></head>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='genre')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <h1 class="page-title">🎶 分类浏览</h1>
+            <p class="page-subtitle">按音乐风格发现好歌</p>
+
+            <!-- 风格标签 -->
+            <div class="genre-tags">
+                <a href="/song/genre/流行" class="genre-tag" th:classappend="${currentGenre == '流行'} ? 'active'">流行</a>
+                <a href="/song/genre/摇滚" class="genre-tag" th:classappend="${currentGenre == '摇滚'} ? 'active'">摇滚</a>
+                <a href="/song/genre/民谣" class="genre-tag" th:classappend="${currentGenre == '民谣'} ? 'active'">民谣</a>
+                <a href="/song/genre/轻音乐" class="genre-tag" th:classappend="${currentGenre == '轻音乐'} ? 'active'">轻音乐</a>
+                <a href="/song/genre/古风" class="genre-tag" th:classappend="${currentGenre == '古风'} ? 'active'">古风</a>
+                <a href="/song/genre/爵士" class="genre-tag" th:classappend="${currentGenre == '爵士'} ? 'active'">爵士</a>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title" th:text="'🎵 ' + ${currentGenre} + ' 歌曲'">风格歌曲</h2>
+            </div>
+
+            <div class="card" th:if="${#lists.isEmpty(songs)}">
+                <div class="empty-state">
+                    <div class="empty-icon">🎵</div>
+                    <h3>暂无歌曲</h3>
+                    <p>该风格下暂无歌曲</p>
+                </div>
+            </div>
+
+            <div class="song-grid" th:unless="${#lists.isEmpty(songs)}">
+                <div class="song-card" th:each="song : ${songs}"
+                     th:data-song="${song.toJson()}">
+                    <div class="cover">
+                        <img loading="lazy" th:src="${song.coverUrl}" alt="" onerror="this.src='/images/default-cover.svg'">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="song-title" th:text="${song.title}">歌名</div>
+                    <div class="song-artist" th:text="${song.artist}">歌手</div>
+                    <div class="song-card-meta">
+                        <div class="meta-stats">
+                            <span>▶ <span th:text="${#numbers.formatInteger(song.playCount != null ? song.playCount : 0, 0, 'COMMA')}">0</span></span>
+                            <span>❤ <span th:text="${#numbers.formatInteger(song.likeCount != null ? song.likeCount : 0, 0, 'COMMA')}">0</span></span>
+                        </div>
+                        <div class="meta-actions">
+                            <button class="mini-btn" th:data-like-id="${song.id}" th:onclick="|toggleLike(${song.id}, this)|" title="喜欢">♡</button>
+                            <button class="mini-btn" th:onclick="|event.stopPropagation(); showAddToPlaylist(${song.id})|" title="加入歌单">＋</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/player :: player}"></div>
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 收集当前页面的所有歌曲作为播放列表
+            var songCards = document.querySelectorAll('.song-card');
+            window.currentPlaylist = [];
+            songCards.forEach(function(card) {
+                var songData = card.getAttribute('data-song');
+                if (songData) {
+                    try {
+                        window.currentPlaylist.push(JSON.parse(songData));
+                    } catch(e) {}
+                }
+                // 点击播放（排除按钮点击
+                card.addEventListener('click', function(e) {
+                    if (e.target.closest('.mini-btn')) return;
+                    var data = this.getAttribute('data-song');
+                    if (data) {
+                        try {
+                            var song = JSON.parse(data);
+                            playSong(song);
+                        } catch(e) {
+                            console.error('解析歌曲数据失败:', e);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

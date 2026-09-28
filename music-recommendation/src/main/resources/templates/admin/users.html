@@ -1,0 +1,461 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 管理员后台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <div class="logo">
+            <a href="/admin">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#F59E0B"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                </div>
+                <div>
+                    <div class="logo-text">Admin<span>Panel</span></div>
+                    <div class="logo-sub">Management Console</div>
+                </div>
+            </a>
+        </div>
+        <nav>
+            <a href="/admin">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>
+                控制台
+            </a>
+            <a href="/admin/songs">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+                歌曲管理
+            </a>
+            <a href="/admin/users" class="active">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                用户管理
+            </a>
+            <a href="/index">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                返回前台
+            </a>
+        </nav>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">系统</div>
+        <div class="footer-links">
+            <a href="/switch-account" class="link-switch" onclick="return confirm('确认切换账号？')">
+                <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>
+                切换账号
+            </a>
+            <a href="/logout" class="link-logout" onclick="return confirm('确认退出登录？')">
+                <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+                退出登录
+            </a>
+        </div>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="admin-main">
+        <div class="admin-header">
+            <h1>
+                <span class="header-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                用户管理
+            </h1>
+            <div class="admin-user">
+                <div class="avatar" th:text="${admin != null ? admin.nickname.substring(0,1) : 'A'}">A</div>
+                <div>
+                    <div class="admin-name" th:text="${admin != null ? admin.nickname : '管理员'}">管理员</div>
+                    <div class="admin-role">SUPER ADMIN</div>
+                </div>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="搜索用户名/昵称/邮箱..." oninput="filterUsers()">
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal()">➕ 新增用户</button>
+                    <a href="/switch-account" class="mini-btn mini-btn-switch" onclick="return confirm('确认切换账号？')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        切换
+                    </a>
+                    <a href="/logout" class="mini-btn mini-btn-logout" onclick="return confirm('确认退出登录？')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        退出
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示消息 -->
+        <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <!-- 统计摘要 -->
+        <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+            <div style="background:#fff; border-radius:10px; padding:14px 20px; box-shadow:0 1px 4px rgba(0,0,0,.04); display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">👥</span>
+                <div>
+                    <div style="font-size:12px; color:#999;">总用户数</div>
+                    <div style="font-size:20px; font-weight:700; color:#1a1a2e;" th:text="${#lists.size(users)}">0</div>
+                </div>
+            </div>
+            <div style="background:#fff; border-radius:10px; padding:14px 20px; box-shadow:0 1px 4px rgba(0,0,0,.04); display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">🛡️</span>
+                <div>
+                    <div style="font-size:12px; color:#999;">管理员</div>
+                    <div style="font-size:20px; font-weight:700; color:#1a1a2e;">
+                        <span th:text="${#lists.size(users)}"></span>
+                        <script th:inline="javascript">
+                            /*<![CDATA[*/
+                            const _users = /*[[${users}]]*/ [];
+                            document.currentScript.parentElement.textContent = _users.filter(function(u) { return u.role === 'ROLE_ADMIN'; }).length;
+                            /*]]>*/
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户表格 -->
+        <div class="admin-card">
+            <div class="table-wrap">
+                <table class="admin-table" id="userTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>昵称</th>
+                            <th>邮箱</th>
+                            <th>手机号</th>
+                            <th>角色</th>
+                            <th>注册时间</th>
+                            <th style="text-align:center;width:160px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${users}" th:attr="data-search='|${u.username} ${u.nickname} ${u.email}|'">
+                            <td style="font-weight:600;color:#1a1a2e;" th:text="${u.id}">1</td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="user-avatar-sm" th:text="${#strings.substring(u.username, 0, 1)}">U</div>
+                                    <span th:text="${u.username}">username</span>
+                                </div>
+                            </td>
+                            <td th:text="${u.nickname}">nickname</td>
+                            <td>
+                                <span th:if="${u.email != null and !u.email.isEmpty()}" th:text="${u.email}" style="color:#666;">email</span>
+                                <span th:if="${u.email == null or u.email.isEmpty()}" style="color:#ccc;">—</span>
+                            </td>
+                            <td>
+                                <span th:if="${u.phone != null and !u.phone.isEmpty()}" th:text="${u.phone}" style="color:#666;">phone</span>
+                                <span th:if="${u.phone == null or u.phone.isEmpty()}" style="color:#ccc;">—</span>
+                            </td>
+                            <td>
+                                <span th:if="${u.role == 'ROLE_ADMIN'}" class="badge badge-admin">🛡️ 管理员</span>
+                                <span th:if="${u.role == 'ROLE_BANNED'}" class="badge badge-banned">🚫 封禁</span>
+                                <span th:if="${u.role != 'ROLE_ADMIN' and u.role != 'ROLE_BANNED'}" class="badge badge-user">👤 普通用户</span>
+                            </td>
+                            <td style="color:#888;font-size:13px;" th:text="${#temporals.format(u.createdAt, 'yyyy-MM-dd HH:mm')}">date</td>
+                            <td style="text-align:center;">
+                                <div style="display:flex;gap:6px;justify-content:center;">
+                                    <!-- 编辑按钮 - 使用 data-* 属性代替 onclick 字符串拼接 -->
+                                    <button class="btn-sm btn-warning edit-user-btn"
+                                            th:attr="data-id=${u.id},
+                                                      data-username=${u.username},
+                                                      data-nickname=${u.nickname},
+                                                      data-email=${u.email},
+                                                      data-phone=${u.phone},
+                                                      data-role=${u.role}">
+                                        ✏️ 编辑
+                                    </button>
+                                    <!-- 删除 -->
+                                    <form method="post" th:action="@{/admin/users/delete/{id}(id=${u.id})}" style="display:inline" onsubmit="return confirm('确定要删除用户「' + this.querySelector('input[type=hidden]')?.value + '」吗？\n该用户的所有评论等关联数据也将被删除。')">
+                                        <button type="submit" class="btn-sm btn-danger" th:disabled="${u.role == 'ROLE_ADMIN'}" th:title="${u.role == 'ROLE_ADMIN' ? '管理员不能被删除' : '删除该用户'}">
+                                            🗑️ 删除
+                                        </button>
+                                    </form>
+                                    <!-- 封禁/解封 -->
+                                    <form method="post" th:if="${u.role != 'ROLE_ADMIN'}" th:action="@{/admin/users/toggle-ban/{id}(id=${u.id})}" style="display:inline">
+                                        <button type="submit" class="btn-sm" th:classappend="${u.role == 'ROLE_BANNED'} ? 'btn-success' : 'btn-info'"
+                                                th:text="${u.role == 'ROLE_BANNED'} ? '✅ 解封' : '🔒 封禁'"
+                                                th:title="${u.role == 'ROLE_BANNED'} ? '解封用户' : '封禁用户'">
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 空状态 -->
+                        <tr class="empty-row" style="display:none;" id="emptyRow">
+                            <td colspan="8">
+                                <div style="padding:32px;">
+                                    <div style="font-size:40px;margin-bottom:8px;">🔍</div>
+                                    <div>没有匹配的用户</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 底部提示 -->
+        <div style="margin-top:16px;font-size:12px;color:#999;text-align:center;">
+            💡 提示：管理员账号不能被删除 · 点击用户名旁头像可快速复制用户名
+        </div>
+    </main>
+
+    <!-- 用户编辑模态框 -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <h2 id="modalTitle">📝 新增用户</h2>
+            <form id="userForm" onsubmit="saveUser(event)">
+                <input type="hidden" name="id" id="userId">
+
+                <div class="form-group">
+                    <label>用户名 <span class="required">*</span></label>
+                    <input type="text" name="username" id="formUsername" required placeholder="请输入用户名（用于登录）">
+                    <div class="hint">用户名唯一，创建后不可修改</div>
+                </div>
+
+                <div class="form-group">
+                    <label>密码 <span class="required" id="pwdRequired">*</span>
+                        <span style="color:#999;font-weight:400;font-size:12px;" id="passwordHint">（新增时必填）</span>
+                    </label>
+                    <input type="password" name="password" id="formPassword" placeholder="留空则不修改密码" autocomplete="new-password">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>昵称</label>
+                        <input type="text" name="nickname" id="formNickname" placeholder="显示名称">
+                    </div>
+                    <div class="form-group">
+                        <label>角色</label>
+                        <select name="role" id="formRole">
+                            <option value="ROLE_USER">👤 普通用户</option>
+                            <option value="ROLE_ADMIN">🛡️ 管理员</option>
+                            <option value="ROLE_BANNED">🚫 封禁</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" name="email" id="formEmail" placeholder="user@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label>手机号</label>
+                    <input type="text" name="phone" id="formPhone" placeholder="13800138000">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">创建用户</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast 通知容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ========== 模态框操作 ==========
+        function openModal(userData) {
+            var titleEl = document.getElementById('modalTitle');
+            var submitBtn = document.getElementById('submitBtn');
+            var userId = document.getElementById('userId');
+            var formUsername = document.getElementById('formUsername');
+            var formPassword = document.getElementById('formPassword');
+            var formNickname = document.getElementById('formNickname');
+            var formEmail = document.getElementById('formEmail');
+            var formPhone = document.getElementById('formPhone');
+            var formRole = document.getElementById('formRole');
+            var passwordHint = document.getElementById('passwordHint');
+            var pwdRequired = document.getElementById('pwdRequired');
+
+            if (userData) {
+                // 编辑模式
+                titleEl.textContent = '✏️ 编辑用户';
+                submitBtn.textContent = '更新用户';
+                userId.value = userData.id;
+                formUsername.value = userData.username;
+                formUsername.disabled = true;   // 用户名不可修改
+                formNickname.value = userData.nickname || '';
+                formEmail.value = userData.email || '';
+                formPhone.value = userData.phone || '';
+                formRole.value = userData.role || 'ROLE_USER';
+                formPassword.value = '';
+                formPassword.required = false;
+                pwdRequired.style.display = 'none';
+                passwordHint.textContent = '（留空则不修改密码）';
+            } else {
+                // 新增模式
+                titleEl.textContent = '📝 新增用户';
+                submitBtn.textContent = '创建用户';
+                userId.value = '';
+                formUsername.disabled = false;
+                formUsername.value = '';
+                formNickname.value = '';
+                formEmail.value = '';
+                formPhone.value = '';
+                formRole.value = 'ROLE_USER';
+                formPassword.value = '';
+                formPassword.required = true;
+                pwdRequired.style.display = 'inline';
+                passwordHint.textContent = '（新增时必填）';
+            }
+            document.getElementById('userModal').classList.add('active');
+            // 聚焦到第一个输入框
+            setTimeout(function() {
+                if (userData) { formNickname.focus(); }
+                else { formUsername.focus(); }
+            }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById('userModal').classList.remove('active');
+        }
+
+        // ========== 使用 data-* 属性绑定编辑按钮（代替 th:onclick） ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.edit-user-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    openModal({
+                        id: this.getAttribute('data-id'),
+                        username: this.getAttribute('data-username'),
+                        nickname: this.getAttribute('data-nickname'),
+                        email: this.getAttribute('data-email'),
+                        phone: this.getAttribute('data-phone'),
+                        role: this.getAttribute('data-role')
+                    });
+                });
+            });
+
+            // 点击遮罩关闭
+            document.getElementById('userModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+
+            // ESC 键关闭
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeModal();
+            });
+        });
+
+        // ========== 保存用户 ==========
+        function saveUser(event) {
+            event.preventDefault();
+            var form = document.getElementById('userForm');
+            var formData = new FormData(form);
+            var isEdit = formData.get('id') ? true : false;
+
+            // 前端校验：新增时必须填密码
+            if (!isEdit && !formData.get('password')) {
+                showToast('新增用户时必须填写密码', 'error');
+                return;
+            }
+
+            // 对于编辑模式，需要手动启用 disabled 的 username 字段（否则不会提交）
+            if (isEdit) {
+                document.getElementById('formUsername').disabled = false;
+            }
+
+            var params = new URLSearchParams();
+            formData.forEach(function(value, key) {
+                params.append(key, value);
+            });
+
+            fetch('/admin/users/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal();
+                    // 恢复 username 的 disabled 状态
+                    document.getElementById('formUsername').disabled = false;
+                    setTimeout(function() { location.reload(); }, 600);
+                } else {
+                    showToast(data.message, 'error');
+                    // 恢复 disabled
+                    document.getElementById('formUsername').disabled = false;
+                }
+            })
+            .catch(function(err) {
+                showToast('网络错误：' + err.message, 'error');
+                document.getElementById('formUsername').disabled = false;
+            });
+        }
+
+        // ========== 搜索过滤 ==========
+        function filterUsers() {
+            var query = document.getElementById('searchInput').value.toLowerCase().trim();
+            var rows = document.querySelectorAll('#userTable tbody tr:not(.empty-row)');
+            var visibleCount = 0;
+
+            rows.forEach(function(row) {
+                var searchData = (row.getAttribute('data-search') || '').toLowerCase();
+                var match = !query || searchData.indexOf(query) !== -1;
+                row.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+
+            var emptyRow = document.getElementById('emptyRow');
+            if (emptyRow) {
+                emptyRow.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        }
+
+        // ========== Toast 通知 ==========
+        function showToast(message, type) {
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast ' + (type || 'info');
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            requestAnimationFrame(function() {
+                toast.classList.add('show');
+            });
+
+            setTimeout(function() {
+                toast.classList.remove('show');
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 3000);
+        }
+
+        // ========== 快速复制用户名 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.user-avatar-sm').forEach(function(el) {
+                el.style.cursor = 'pointer';
+                el.title = '点击复制用户名';
+                el.addEventListener('click', function() {
+                    var username = this.parentElement.querySelector('span')?.textContent;
+                    if (username) {
+                        navigator.clipboard.writeText(username).then(function() {
+                            showToast('已复制用户名：' + username, 'success');
+                        }).catch(function() {
+                            // fallback
+                            var ta = document.createElement('textarea');
+                            ta.value = username;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            ta.remove();
+                            showToast('已复制用户名：' + username, 'success');
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='发现音乐 - 智能音乐推荐')}"></head>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='search')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <h1 class="page-title">🔍 发现音乐</h1>
+            <p class="page-subtitle">搜索你喜欢的歌曲和歌手</p>
+
+            <!-- 风格推荐 -->
+            <div class="section-header">
+                <h2 class="section-title">🎯 热门风格</h2>
+            </div>
+            <div class="genre-tags">
+                <a href="/song/genre/流行" class="genre-tag">流行</a>
+                <a href="/song/genre/摇滚" class="genre-tag">摇滚</a>
+                <a href="/song/genre/民谣" class="genre-tag">民谣</a>
+                <a href="/song/genre/轻音乐" class="genre-tag">轻音乐</a>
+                <a href="/song/genre/古风" class="genre-tag">古风</a>
+                <a href="/song/genre/爵士" class="genre-tag">爵士</a>
+            </div>
+
+            <!-- 搜索结果 -->
+            <div class="section-header">
+                <h2 class="section-title" th:if="${keyword}">搜索结果：<span style="color:#F59E0B" th:text="${keyword}"></span></h2>
+                <h2 class="section-title" th:unless="${keyword}">全部歌曲</h2>
+            </div>
+
+            <div class="card" th:if="${#lists.isEmpty(songs)}">
+                <div class="empty-state">
+                    <div class="empty-icon">🎵</div>
+                    <h3>暂无歌曲</h3>
+                    <p th:if="${keyword}">没有找到"<span th:text="${keyword}"></span>"相关的歌曲，试试其他关键词</p>
+                    <p th:unless="${keyword}">搜索你喜欢的歌曲吧</p>
+                </div>
+            </div>
+
+            <table class="song-table" th:unless="${#lists.isEmpty(songs)}">
+                <thead>
+                    <tr>
+                        <th style="width: 50px">#</th>
+                        <th>歌曲</th>
+                        <th>专辑</th>
+                        <th>风格</th>
+                        <th>播放</th>
+                        <th>喜欢</th>
+                        <th>时长</th>
+                        <th style="width: 110px">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="song, iter : ${songs}"
+                        th:data-song="${song.toJson()}">
+                        <td class="text-muted" th:text="${iter.count}">1</td>
+                        <td>
+                            <div class="song-info">
+                                <div class="thumb">
+                                    <img loading="lazy" th:src="${song.coverUrl}" alt="" onerror="this.src='/images/default-cover.svg'">
+                                </div>
+                                <div class="info">
+                                    <div class="title" th:text="${song.title}">歌名</div>
+                                    <div class="artist" th:text="${song.artist}">歌手</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-muted" th:text="${song.album}">专辑</td>
+                        <td><span class="genre-tag" style="padding: 2px 10px; font-size: 12px;" th:text="${song.genre}">风格</span></td>
+                        <td class="text-muted">▶ <span th:text="${#numbers.formatInteger(song.playCount != null ? song.playCount : 0, 0, 'COMMA')}">0</span></td>
+                        <td class="text-muted">❤ <span th:text="${#numbers.formatInteger(song.likeCount != null ? song.likeCount : 0, 0, 'COMMA')}">0</span></td>
+                        <td class="text-muted" th:text="${song.duration}">时长</td>
+                        <td>
+                            <div class="meta-actions" style="justify-content: flex-end;">
+                                <button class="mini-btn" th:data-like-id="${song.id}" th:onclick="|toggleLike(${song.id}, this)|" title="喜欢">♡</button>
+                                <button class="mini-btn" th:onclick="|event.stopPropagation(); showAddToPlaylist(${song.id})|" title="加入歌单">＋</button>
+                                <button class="mini-btn" th:onclick="|event.stopPropagation(); window.location.href='/song/' + ${song.id}|" title="详情">↗</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/player :: player}"></div>
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 收集所有歌曲作为播放列表
+            var songRows = document.querySelectorAll('.song-table tbody tr');
+            window.currentPlaylist = [];
+            songRows.forEach(function(row) {
+                var songData = row.getAttribute('data-song');
+                if (songData) {
+                    try {
+                        window.currentPlaylist.push(JSON.parse(songData));
+                    } catch(e) {}
+                }
+                // 点击行播放（跳过按钮点击）
+                row.addEventListener('click', function(e) {
+                    if (e.target.closest('.mini-btn')) return;
+                    var data = this.getAttribute('data-song');
+                    if (data) {
+                        try {
+                            var song = JSON.parse(data);
+                            var idx = window.currentPlaylist.findIndex(function(s) { return s.id === song.id; });
+                            if (idx >= 0) Player.currentIndex = idx;
+                            playSong(song);
+                        } catch(e) {
+                            console.error('解析歌曲数据失败:', e);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

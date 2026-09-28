@@ -1,0 +1,100 @@
+/* pages/index/index.wxss */
+.greeting {
+  padding: 16rpx 8rpx 32rpx;
+}
+
+.hello {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sub {
+  display: block;
+  font-size: 26rpx;
+  color: #888899;
+  margin-top: 8rpx;
+}
+
+.genre-scroll {
+  white-space: nowrap;
+  padding: 8rpx 0 24rpx;
+}
+
+.genre-tag {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  border-radius: 40rpx;
+  background: #1a1a2e;
+  color: #ccc;
+  font-size: 24rpx;
+  border: 2rpx solid transparent;
+}
+
+.genre-tag.active {
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
+}
+
+.section {
+  margin-top: 16rpx;
+}
+
+.song-scroll {
+  white-space: nowrap;
+}
+
+.song-card {
+  display: inline-block;
+  width: 240rpx;
+  margin-right: 20rpx;
+  vertical-align: top;
+}
+
+.song-cover {
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 16rpx;
+  background: #1a1a2e;
+}
+
+.song-title {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-artist {
+  display: block;
+  font-size: 22rpx;
+  color: #888899;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank {
+  width: 50rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #888899;
+  text-align: center;
+}
+
+.rank.top3 {
+  color: #e94560;
+}
+
+.rank.dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #e94560;
+  margin: 0 19rpx;
+}

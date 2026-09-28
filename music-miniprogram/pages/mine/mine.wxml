@@ -1,0 +1,51 @@
+<!--pages/mine/mine.wxml-->
+<view class="container">
+  <!-- 用户卡片 -->
+  <view class="user-card">
+    <view class="avatar">
+      <text wx:if="{{!userInfo || !userInfo.avatarUrl}}" class="avatar-placeholder">🎵</text>
+      <image wx:else src="{{userInfo.avatarUrl}}" mode="aspectFill" />
+    </view>
+    <view class="user-info">
+      <block wx:if="{{userInfo}}">
+        <text class="nickname">{{userInfo.nickname || userInfo.username}}</text>
+        <text class="username">@{{userInfo.username}}</text>
+        <view class="stats">
+          <view class="stat-item">
+            <text class="stat-num">{{likedSongs.length}}</text>
+            <text class="stat-label">点赞</text>
+          </view>
+        </view>
+      </block>
+      <block wx:else>
+        <text class="nickname">未登录</text>
+        <text class="username">登录后解锁个性化推荐</text>
+        <button class="login-btn" bindtap="goLogin">立即登录</button>
+      </block>
+    </view>
+  </view>
+
+  <!-- 我喜欢的音乐 -->
+  <view wx:if="{{userInfo}}" class="section">
+    <view class="section-title">❤️ 我喜欢的音乐</view>
+    <block wx:for="{{likedSongs}}" wx:key="id">
+      <view class="song-row" data-song="{{item}}" bindtap="goDetail">
+        <image class="row-cover" src="{{item.coverUrl || ''}}" mode="aspectFill" />
+        <view class="row-info flex-1">
+          <text class="row-title">{{item.title}}</text>
+          <text class="row-sub">{{item.artist}}</text>
+        </view>
+      </view>
+    </block>
+    <view wx:if="{{!likedSongs.length}}" class="empty">还没有点赞的歌曲哦</view>
+  </view>
+
+  <!-- 菜单 -->
+  <view wx:if="{{userInfo}}" class="menu-card">
+    <view class="menu-item" bindtap="doLogout">
+      <text class="menu-icon">🚪</text>
+      <text class="menu-label">退出登录</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+</view>

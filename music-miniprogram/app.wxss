@@ -1,0 +1,86 @@
+/* app.wxss - 全局深色主题 */
+page {
+  background-color: #0f0f1a;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.container {
+  padding: 24rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 20rpx;
+  padding-left: 8rpx;
+  border-left: 6rpx solid #e94560;
+}
+
+.text-muted {
+  color: #888899;
+  font-size: 24rpx;
+}
+
+.text-accent {
+  color: #e94560;
+}
+
+.flex-1 {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 歌曲行 */
+.song-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.05);
+}
+
+.row-cover {
+  width: 90rpx;
+  height: 90rpx;
+  border-radius: 12rpx;
+  background: #1a1a2e;
+  flex-shrink: 0;
+}
+
+.row-info {
+  flex: 1;
+  margin: 0 20rpx;
+  overflow: hidden;
+}
+
+.row-title {
+  display: block;
+  font-size: 28rpx;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-sub {
+  display: block;
+  font-size: 22rpx;
+  color: #888899;
+  margin-top: 6rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-count {
+  font-size: 22rpx;
+  color: #666;
+}
+
+/* 默认封面占位 */
+.default-cover {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+}

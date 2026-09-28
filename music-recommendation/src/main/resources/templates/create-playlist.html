@@ -1,0 +1,38 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='新建歌单 - 智能音乐推荐')}"></head>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='playlists')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <h1 class="page-title">🎵 新建歌单</h1>
+            <p class="page-subtitle">创建一个新歌单，收藏你喜欢的音乐</p>
+
+            <div id="message-area"></div>
+
+            <div class="card" style="max-width: 500px;">
+                <div class="form-group">
+                    <label for="playlist-name">歌单名称 *</label>
+                    <input type="text" id="playlist-name" placeholder="给歌单起个名字" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="playlist-desc">歌单描述</label>
+                    <textarea id="playlist-desc" placeholder="描述这个歌单的风格..." maxlength="200"></textarea>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-primary" onclick="createPlaylist()">✨ 创建歌单</button>
+                    <a href="/playlist/mine" class="btn btn-secondary">取消</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/player :: player}"></div>
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!--pages/song-detail/song-detail.wxml-->
+<view class="container" wx:if="{{song}}">
+  <!-- 封面区 -->
+  <view class="hero">
+    <image class="cover" src="{{song.coverUrl || ''}}" mode="aspectFill" />
+    <view class="hero-overlay">
+      <text class="song-title">{{song.title}}</text>
+      <text class="song-artist">{{song.artist}}</text>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="actions">
+    <view class="action-btn" bindtap="toggleLike">
+      <text class="action-icon">{{isLiked ? '❤️' : '🤍'}}</text>
+      <text class="action-label">{{isLiked ? '已点赞' : '点赞'}}</text>
+    </view>
+    <view class="action-btn" bindtap="playSong">
+      <text class="action-icon play">▶️</text>
+      <text class="action-label">播放</text>
+    </view>
+    <view class="action-btn" bindtap="playSong">
+      <text class="action-icon">🔗</text>
+      <text class="action-label">分享</text>
+    </view>
+  </view>
+
+  <!-- 歌曲信息 -->
+  <view class="info-card">
+    <view class="info-row" wx:if="{{song.album}}">
+      <text class="info-label">专辑</text>
+      <text class="info-value">{{song.album}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">风格</text>
+      <text class="info-value">{{song.genre}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">时长</text>
+      <text class="info-value">{{song.duration}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">播放量</text>
+      <text class="info-value">{{song.playCount}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">点赞数</text>
+      <text class="info-value">{{song.likeCount}}</text>
+    </view>
+    <view class="info-row" wx:if="{{song.description}}">
+      <text class="info-label">简介</text>
+      <text class="info-value desc">{{song.description}}</text>
+    </view>
+  </view>
+
+  <!-- 相关推荐 -->
+  <view wx:if="{{related.length}}" class="section">
+    <view class="section-title">相似歌曲</view>
+    <block wx:for="{{related}}" wx:key="id">
+      <view class="song-row" data-id="{{item.id}}" bindtap="goRelated">
+        <image class="row-cover" src="{{item.coverUrl || ''}}" mode="aspectFill" />
+        <view class="row-info flex-1">
+          <text class="row-title">{{item.title}}</text>
+          <text class="row-sub">{{item.artist}} · {{item.genre}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

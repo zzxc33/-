@@ -1,0 +1,24 @@
+<!--
+  ========== fragments/topbar ==========
+  顶部搜索导航栏
+  使用方法：<th:replace="~{fragments/topbar :: topbar}">
+-->
+<header class="top-bar" th:fragment="topbar">
+    <div class="top-bar-left">
+        <div class="search-box">
+            <input type="text" placeholder="搜索歌曲、歌手..." id="search-input"
+                   onkeydown="if(event.key==='Enter') searchSongs()">
+            <button onclick="searchSongs()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+        </div>
+    </div>
+    <div class="top-bar-right">
+        <a href="/profile" class="user-badge">
+            <div class="user-avatar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span th:text="${username}">用户</span>
+        </a>
+    </div>
+</header>

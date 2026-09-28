@@ -1,0 +1,403 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle='智能音乐推荐 - 首页')}"></head>
+<style>
+    /* ========== HERO BANNER 2.0 ========== */
+    .hero-banner {
+        background: linear-gradient(155deg, rgba(245, 158, 11, 0.14) 0%, rgba(249, 115, 22, 0.09) 35%, rgba(167, 139, 250, 0.10) 70%, rgba(34, 211, 238, 0.05) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 28px;
+        padding: 56px 56px 52px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* 浮动光斑装饰 */
+    .hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -120px;
+        right: -80px;
+        width: 420px;
+        height: 420px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0) 70%);
+        border-radius: 50%;
+        animation: floatOrb 10s ease-in-out infinite alternate;
+        pointer-events: none;
+    }
+    .hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -100px;
+        left: -60px;
+        width: 360px;
+        height: 360px;
+        background: radial-gradient(circle, rgba(167, 139, 250, 0.14) 0%, rgba(167, 139, 250, 0) 70%);
+        border-radius: 50%;
+        animation: floatOrb 13s ease-in-out infinite alternate-reverse;
+        pointer-events: none;
+    }
+
+    @keyframes floatOrb {
+        0%   { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(-20px, 15px) scale(1.1); }
+    }
+
+    /* 声波可视化背景 (右下角) */
+    .hero-waveform {
+        position: absolute;
+        right: 32px;
+        bottom: 32px;
+        width: 180px;
+        height: 80px;
+        pointer-events: none;
+        opacity: 0.35;
+    }
+    .hero-waveform .bar {
+        fill: #F59E0B;
+        animation: waveBar 1.6s ease-in-out infinite;
+        transform-origin: center bottom;
+    }
+    .hero-waveform .bar:nth-child(1) { animation-delay: 0s;   fill: #F59E0B; }
+    .hero-waveform .bar:nth-child(2) { animation-delay: 0.1s; fill: #F97316; }
+    .hero-waveform .bar:nth-child(3) { animation-delay: 0.2s; fill: #FB923C; }
+    .hero-waveform .bar:nth-child(4) { animation-delay: 0.3s; fill: #A78BFA; }
+    .hero-waveform .bar:nth-child(5) { animation-delay: 0.4s; fill: #C4B5FD; }
+    .hero-waveform .bar:nth-child(6) { animation-delay: 0.5s; fill: #22D3EE; }
+    .hero-waveform .bar:nth-child(7) { animation-delay: 0.6s; fill: #F59E0B; }
+    .hero-waveform .bar:nth-child(8) { animation-delay: 0.7s; fill: #F97316; }
+    .hero-waveform .bar:nth-child(9) { animation-delay: 0.8s; fill: #FB923C; }
+    .hero-waveform .bar:nth-child(10){ animation-delay: 0.9s; fill: #A78BFA; }
+
+    @keyframes waveBar {
+        0%, 100% { transform: scaleY(0.25); }
+        50%      { transform: scaleY(1); }
+    }
+
+    .hero-banner h1 {
+        font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #fff;
+        margin-bottom: 12px;
+        position: relative;
+        z-index: 2;
+        line-height: 1.1;
+    }
+
+    .hero-banner p {
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.55);
+        margin-bottom: 28px;
+        max-width: 540px;
+        line-height: 1.7;
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-banner .hero-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* 时间问候渐变文字 + 动画 */
+    .time-greeting {
+        background: linear-gradient(90deg, #F59E0B 0%, #F97316 40%, #A78BFA 75%, #22D3EE 100%);
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: gradientShift 5s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* 首页卡片 meta */
+    .song-card-meta {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .song-card-stats {
+        display: flex;
+        gap: 10px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+    .song-card-actions {
+        display: flex;
+        gap: 4px;
+    }
+</style>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='home')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <!-- Hero Banner 个性化欢迎 -->
+            <div class="hero-banner">
+                <h1><span id="greeting-text" class="time-greeting">欢迎回来</span>，<span th:text="${username}">用户</span> 🎵</h1>
+                <p>基于协同过滤算法，结合你的听歌口味，为你精选推荐好听的歌曲。发现属于你的音乐世界。</p>
+                <div class="hero-actions">
+                    <a href="/song/search" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        发现音乐
+                    </a>
+                    <a href="/playlist/mine" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>
+                        我的歌单
+                    </a>
+                    <button class="btn btn-secondary" onclick="playRandomRecommended()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        随机播放
+                    </button>
+                </div>
+                <!-- 波形可视化 -->
+                <svg class="hero-waveform" viewBox="0 0 180 80" preserveAspectRatio="none">
+                    <rect class="bar" x="4"  y="8"  width="10" height="64" rx="3"/>
+                    <rect class="bar" x="22" y="8"  width="10" height="64" rx="3"/>
+                    <rect class="bar" x="40" y="8"  width="10" height="64" rx="3"/>
+                    <rect class="bar" x="58" y="8"  width="10" height="64" rx="3"/>
+                    <rect class="bar" x="76" y="8"  width="10" height="64" rx="3"/>
+                    <rect class="bar" x="94" y="8"  width="10" height="64" rx="3"/>
+                    <rect class="bar" x="112" y="8" width="10" height="64" rx="3"/>
+                    <rect class="bar" x="130" y="8" width="10" height="64" rx="3"/>
+                    <rect class="bar" x="148" y="8" width="10" height="64" rx="3"/>
+                    <rect class="bar" x="166" y="8" width="10" height="64" rx="3"/>
+                </svg>
+            </div>
+
+            <!-- 数据统计卡 -->
+            <div class="stat-row" id="stat-row">
+                <div class="stat-card">
+                    <div class="stat-icon">🎧</div>
+                    <div class="stat-value" th:text="${totalPlayed != null ? totalPlayed : '--'}">0</div>
+                    <div class="stat-label">已播放歌曲</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❤️</div>
+                    <div class="stat-value" th:text="${totalLiked != null ? totalLiked : '--'}">0</div>
+                    <div class="stat-label">喜欢的音乐</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-value" th:text="${playlistCount != null ? playlistCount : '--'}">0</div>
+                    <div class="stat-label">创建的歌单</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🧠</div>
+                    <div class="stat-value">协同过滤</div>
+                    <div class="stat-label">当前推荐算法</div>
+                </div>
+            </div>
+
+            <!-- 音乐风格快捷入口 -->
+            <div class="section-header">
+                <h2 class="section-title">🎯 音乐风格</h2>
+            </div>
+            <div class="genre-quick">
+                <a href="/song/genre/流行" class="genre-item genre-pop"><span class="genre-emoji">🎤</span><span class="genre-name">流行</span></a>
+                <a href="/song/genre/摇滚" class="genre-item genre-rock"><span class="genre-emoji">🎸</span><span class="genre-name">摇滚</span></a>
+                <a href="/song/genre/民谣" class="genre-item genre-folk"><span class="genre-emoji">🎸</span><span class="genre-name">民谣</span></a>
+                <a href="/song/genre/轻音乐" class="genre-item genre-classical"><span class="genre-emoji">🎹</span><span class="genre-name">轻音乐</span></a>
+                <a href="/song/genre/古风" class="genre-item genre-electronic"><span class="genre-emoji">🏮</span><span class="genre-name">古风</span></a>
+                <a href="/song/genre/爵士" class="genre-item genre-jazz"><span class="genre-emoji">🎷</span><span class="genre-name">爵士</span></a>
+            </div>
+
+            <!-- 个性化推荐：协同过滤推荐 -->
+            <div class="section-header">
+                <h2 class="section-title">⭐ 为你推荐</h2>
+                <span class="recommend-tip tip-cf">🧠 协同过滤算法 · 基于你的听歌口味</span>
+                <a href="/song/search" class="section-more">查看更多 →</a>
+            </div>
+            <div class="song-grid" id="recommended-grid">
+                <div class="song-card" th:each="song : ${recommendedSongs}"
+                     th:data-song="${song.toJson()}">
+                    <div class="cover">
+                        <img loading="lazy" th:src="${song.coverUrl}" th:alt="${song.title}" onerror="this.src='/images/default-cover.svg'">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="song-title" th:text="${song.title}">歌名</div>
+                    <div class="song-artist" th:text="${song.artist}">歌手</div>
+                    <div class="song-card-meta">
+                        <div class="song-card-stats">
+                            <span>▶ <span th:text="${song.playCount != null ? #numbers.formatInteger(song.playCount, 0, 'COMMA') : '0'}">0</span></span>
+                            <span>❤ <span th:text="${song.likeCount != null ? #numbers.formatInteger(song.likeCount, 0, 'COMMA') : '0'}">0</span></span>
+                        </div>
+                        <div class="song-card-actions">
+                            <button class="mini-btn btn-like" th:data-song-id="${song.id}" title="喜欢">🤍</button>
+                            <button class="mini-btn btn-add" th:data-song-id="${song.id}" title="加入歌单">➕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热门歌曲 -->
+            <div class="section-header">
+                <h2 class="section-title">🔥 热门歌曲</h2>
+                <span class="recommend-tip tip-hot">📈 全站热播</span>
+                <a href="/song/search" class="section-more">查看更多 →</a>
+            </div>
+            <div class="song-grid" id="hot-grid">
+                <div class="song-card" th:each="song : ${hotSongs}"
+                     th:data-song="${song.toJson()}">
+                    <div class="cover">
+                        <img loading="lazy" th:src="${song.coverUrl}" th:alt="${song.title}" onerror="this.src='/images/default-cover.svg'">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="song-title" th:text="${song.title}">歌名</div>
+                    <div class="song-artist" th:text="${song.artist}">歌手</div>
+                    <div class="song-card-meta">
+                        <div class="song-card-stats">
+                            <span>▶ <span th:text="${song.playCount != null ? #numbers.formatInteger(song.playCount, 0, 'COMMA') : '0'}">0</span></span>
+                            <span>❤ <span th:text="${song.likeCount != null ? #numbers.formatInteger(song.likeCount, 0, 'COMMA') : '0'}">0</span></span>
+                        </div>
+                        <div class="song-card-actions">
+                            <button class="mini-btn btn-like" th:data-song-id="${song.id}" title="喜欢">🤍</button>
+                            <button class="mini-btn btn-add" th:data-song-id="${song.id}" title="加入歌单">➕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 新歌上架 -->
+            <div class="section-header">
+                <h2 class="section-title">🆕 新歌上架</h2>
+                <span class="recommend-tip tip-new">✨ 新鲜发现</span>
+                <a href="/song/search" class="section-more">查看更多 →</a>
+            </div>
+            <div class="song-grid" id="new-grid">
+                <div class="song-card" th:each="song : ${newSongs}"
+                     th:data-song="${song.toJson()}">
+                    <div class="cover">
+                        <img loading="lazy" th:src="${song.coverUrl}" th:alt="${song.title}" onerror="this.src='/images/default-cover.svg'">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="song-title" th:text="${song.title}">歌名</div>
+                    <div class="song-artist" th:text="${song.artist}">歌手</div>
+                    <div class="song-card-meta">
+                        <div class="song-card-stats">
+                            <span>▶ <span th:text="${song.playCount != null ? #numbers.formatInteger(song.playCount, 0, 'COMMA') : '0'}">0</span></span>
+                            <span>❤ <span th:text="${song.likeCount != null ? #numbers.formatInteger(song.likeCount, 0, 'COMMA') : '0'}">0</span></span>
+                        </div>
+                        <div class="song-card-actions">
+                            <button class="mini-btn btn-like" th:data-song-id="${song.id}" title="喜欢">🤍</button>
+                            <button class="mini-btn btn-add" th:data-song-id="${song.id}" title="加入歌单">➕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 增强版播放器：展开播放列表+喜欢按钮+循环模式 -->
+    <div th:replace="~{fragments/player :: player}"></div>
+
+    <!-- 播放列表展开面板 -->
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+
+    <!-- 键盘快捷键提示 (桌面端) -->
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+    <script>
+        // 个性化欢迎语（根据时间）
+        document.addEventListener('DOMContentLoaded', function() {
+            var hour = new Date().getHours();
+            var greeting = '欢迎回来';
+            if (hour >= 5 && hour < 11) greeting = '早上好';
+            else if (hour >= 11 && hour < 14) greeting = '中午好';
+            else if (hour >= 14 && hour < 18) greeting = '下午好';
+            else if (hour >= 18 && hour < 23) greeting = '晚上好';
+            else greeting = '夜深了';
+            var g = document.getElementById('greeting-text');
+            if (g) g.textContent = greeting;
+
+            // 收集推荐歌曲作为默认播放列表
+            window.currentPlaylist = [];
+            var allCards = document.querySelectorAll('.song-card');
+            allCards.forEach(function(card) {
+                var songData = card.getAttribute('data-song');
+                if (songData) {
+                    try {
+                        var s = JSON.parse(songData);
+                        if (!window.currentPlaylist.find(function(x) { return x.id === s.id; })) {
+                            window.currentPlaylist.push(s);
+                        }
+                    } catch(e) {}
+                }
+                // 卡片点击播放
+                card.addEventListener('click', function(e) {
+                    if (e.target.closest('.mini-btn')) return;
+                    var songData = this.getAttribute('data-song');
+                    if (songData) {
+                        try {
+                            var song = JSON.parse(songData);
+                            playSong(song);
+                        } catch(err) {
+                            console.error('解析歌曲数据失败:', err);
+                        }
+                    }
+                });
+            });
+            if (typeof Player !== 'undefined' && typeof Player.updateQueueList === 'function') Player.updateQueueList();
+
+            // 迷你按钮事件（喜欢 + 加入歌单）
+            document.querySelectorAll('.btn-like').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var songId = this.getAttribute('data-song-id');
+                    toggleLike(this, songId);
+                });
+            });
+            document.querySelectorAll('.btn-add').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var songId = this.getAttribute('data-song-id');
+                    if (songId) window.location.href = '/playlist/mine?addSong=' + songId;
+                });
+            });
+        });
+
+        // 随机播放推荐
+        function playRandomRecommended() {
+            if (window.currentPlaylist && window.currentPlaylist.length > 0) {
+                var rand = Math.floor(Math.random() * window.currentPlaylist.length);
+                playSong(window.currentPlaylist[rand]);
+            }
+        }
+
+        // 喜欢/取消喜欢歌曲
+        function toggleLike(btn, songId) {
+            if (!songId) return;
+            var liked = btn.classList.contains('liked');
+            if (liked) {
+                btn.textContent = '🤍';
+                btn.classList.remove('liked');
+            } else {
+                btn.textContent = '❤️';
+                btn.classList.add('liked');
+                // 小动画
+                btn.style.transform = 'scale(1.3)';
+                setTimeout(function() { btn.style.transform = ''; }, 200);
+            }
+            fetch('/song/api/like/' + songId, {
+                method: 'POST', credentials: 'same-origin'
+            }).catch(function() {});
+        }
+    </script>
+</body>
+</html>

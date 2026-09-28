@@ -1,0 +1,135 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(pageTitle=${playlist.name} + ' - 歌单')}"></head>
+<body>
+    <aside th:replace="~{fragments/sidebar :: sidebar(active='playlists')}"></aside>
+
+    <div class="main-content">
+        <header th:replace="~{fragments/topbar :: topbar}"></header>
+
+        <div class="page-content">
+            <div id="message-area"></div>
+
+            <!-- 歌单头部 -->
+            <div style="display: flex; gap: 32px; align-items: flex-end; margin-bottom: 32px; padding: 32px; background: rgba(255,255,255,0.03); border-radius: 20px;">
+                <div style="width: 180px; height: 180px; border-radius: 16px; background: linear-gradient(135deg, #F59E0B, #F97316, #A78BFA); display: flex; align-items: center; justify-content: center; font-size: 64px; flex-shrink: 0;">
+                    📋
+                </div>
+                <div>
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">歌单</p>
+                    <h1 style="font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 8px;" th:text="${playlist.name}">歌单名称</h1>
+                    <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 16px;" th:text="${playlist.description} ?: '暂无描述'">描述</p>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-primary" onclick="playAllSongs()">▶ 播放全部</button>
+                        <button class="btn btn-danger btn-sm" th:attr="data-playlist-id=${playlist.id}" onclick="deletePlaylist(this.getAttribute('data-playlist-id'))">🗑 删除歌单</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 歌曲列表 -->
+            <div th:if="${#lists.isEmpty(songs)}">
+                <div class="card">
+                    <div class="empty-state">
+                        <div class="empty-icon">🎵</div>
+                        <h3>歌单还没有歌曲</h3>
+                        <p>去发现页面添加喜欢的歌曲到歌单</p>
+                        <a href="/song/search" class="btn btn-primary" style="margin-top: 16px;">🔍 发现音乐</a>
+                    </div>
+                </div>
+            </div>
+
+            <table class="song-table" th:unless="${#lists.isEmpty(songs)}">
+                <thead>
+                    <tr>
+                        <th style="width: 50px">#</th>
+                        <th>歌曲</th>
+                        <th>专辑</th>
+                        <th>风格</th>
+                        <th>播放</th>
+                        <th>喜欢</th>
+                        <th>时长</th>
+                        <th style="width: 110px">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="song, iter : ${songs}"
+                        th:data-song="${song.toJson()}" th:data-song-id="${song.id}">
+                        <td class="text-muted" th:text="${iter.count}">1</td>
+                        <td>
+                            <div class="song-info">
+                                <div class="thumb">
+                                    <img loading="lazy" th:src="${song.coverUrl}" alt="" onerror="this.src='/images/default-cover.svg'">
+                                </div>
+                                <div class="info">
+                                    <div class="title" th:text="${song.title}">歌名</div>
+                                    <div class="artist" th:text="${song.artist}">歌手</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-muted" th:text="${song.album}">专辑</td>
+                        <td><span class="genre-tag" style="padding: 2px 10px; font-size: 12px;" th:text="${song.genre}">风格</span></td>
+                        <td class="text-muted">▶ <span th:text="${#numbers.formatInteger(song.playCount != null ? song.playCount : 0, 0, 'COMMA')}">0</span></td>
+                        <td class="text-muted">❤ <span th:text="${#numbers.formatInteger(song.likeCount != null ? song.likeCount : 0, 0, 'COMMA')}">0</span></td>
+                        <td class="text-muted" th:text="${song.duration}">时长</td>
+                        <td>
+                            <div class="meta-actions" style="justify-content: flex-end;">
+                                <button class="mini-btn" th:data-like-id="${song.id}" th:onclick="|toggleLike(${song.id}, this)|" title="喜欢">♡</button>
+                                <button class="mini-btn" th:onclick="|event.stopPropagation(); window.location.href='/song/' + ${song.id}|" title="详情">↗</button>
+                                <button class="mini-btn" onclick="event.stopPropagation(); removeFromPlaylist(event, this)" title="移除" th:data-song-id="${song.id}">✕</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/player :: player}"></div>
+    <div th:replace="~{fragments/queue-panel :: queue-panel}"></div>
+    <div th:replace="~{fragments/shortcuts :: shortcuts}"></div>
+
+    <script th:replace="~{fragments/scripts :: scripts}"></script>
+    <script>
+        var PLAYLIST_ID = null;
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从页面元素获取 playlist ID
+            var btn = document.querySelector('[data-playlist-id]');
+            if (btn) {
+                PLAYLIST_ID = btn.getAttribute('data-playlist-id');
+            }
+
+            // 收集所有歌曲作为播放列表
+            var songRows = document.querySelectorAll('.song-table tbody tr');
+            window.currentPlaylist = [];
+            songRows.forEach(function(row) {
+                var songData = row.getAttribute('data-song');
+                if (songData) {
+                    try {
+                        window.currentPlaylist.push(JSON.parse(songData));
+                    } catch(e) {}
+                }
+                // 点击行播放（跳过按钮）
+                row.addEventListener('click', function(e) {
+                    if (e.target.closest('.mini-btn')) return;
+                    var data = this.getAttribute('data-song');
+                    if (data) {
+                        try {
+                            var song = JSON.parse(data);
+                            var idx = window.currentPlaylist.findIndex(function(s) { return s.id === song.id; });
+                            if (idx >= 0) Player.currentIndex = idx;
+                            playSong(song);
+                        } catch(e) {
+                            console.error('解析歌曲数据失败:', e);
+                        }
+                    }
+                });
+            });
+        });
+
+        function playAllSongs() {
+            if (window.currentPlaylist.length > 0) {
+                playSong(window.currentPlaylist[0]);
+            }
+        }
+    </script>
+</body>
+</html>

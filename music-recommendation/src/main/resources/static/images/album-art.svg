@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9b59b6"/>
+      <stop offset="100%" style="stop-color:#8e44ad"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#bg)"/>
+  <circle cx="150" cy="140" r="55" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  <circle cx="150" cy="140" r="20" fill="rgba(255,255,255,0.4)"/>
+  <polygon points="156,130 156,150 175,140" fill="rgba(255,255,255,0.6)"/>
+  <!-- 音乐音符装饰 -->
+  <text x="80" y="80" font-size="30" fill="rgba(255,255,255,0.15)" font-family="serif">♪</text>
+  <text x="210" y="90" font-size="24" fill="rgba(255,255,255,0.12)" font-family="serif">♫</text>
+  <text x="230" y="230" font-size="20" fill="rgba(255,255,255,0.1)" font-family="serif">♪</text>
+</svg>

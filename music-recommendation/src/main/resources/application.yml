@@ -1,0 +1,147 @@
+server:
+  port: 8080
+
+  # 🟢 性能优化：Gzip 压缩
+  compression:
+    enabled: true
+    # Spring Boot 用 contains() 匹配 — JS 有两种：application/javascript 和 text/javascript
+    mime-types: "text/html,text/html;charset=UTF-8,text/css,text/css;charset=UTF-8,application/javascript,text/javascript,application/json,image/svg+xml,text/plain"
+    min-response-size: 512   # 512 字节以上压缩，JS/CSS/JSON 必过阈值
+
+  # 🟢 HTTP 缓存响应头由 spring.web.resources.cache 统一管理（见下文）
+
+spring:
+  application:
+    name: music-recommendation
+
+  # 数据源配置（Druid 连接池）
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://localhost:3306/music_recommendation?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: 123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Druid 连接池参数
+    druid:
+      # 初始连接数
+      initial-size: 5
+      # 最小空闲连接
+      min-idle: 5
+      # 最大活动连接数
+      max-active: 20
+      # 获取连接最大等待时间（毫秒）
+      max-wait: 60000
+      # 连接保持活跃检查间隔（毫秒）
+      time-between-eviction-runs-millis: 60000
+      # 连接最小存活时间（毫秒）
+      min-evictable-idle-time-millis: 300000
+      # 连接有效性检查 SQL
+      validation-query: SELECT 1
+      validation-query-timeout: 5
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      # 连接池监控
+      pool-prepared-statement-open: true
+      max-pool-prepared-statement-per-connection-size: 20
+      # 全局监控 + SQL 防火墙
+      filters: stat,wall
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 100
+          merge-sql: true
+          format-sql: true
+        wall:
+          enabled: true
+          config:
+            multi-statement-allow: true
+      # 监控页面配置（访问地址：http://localhost:8080/druid/）
+      # 开发环境：login-username/login-password 留空即关闭登录验证（直接访问）
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        login-username:
+        login-password:
+        allow:
+        deny:
+      # Web URI 监控
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    defer-datasource-initialization: true
+
+  # SQL 初始化
+  sql:
+    init:
+      mode: always
+
+  # Thymeleaf 配置
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+    servlet:
+      content-type: text/html
+
+  # 静态资源路径 + 🟢 性能优化：7 天强缓存 + 处理管线
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 7d
+        use-last-modified: true
+        cachecontrol:
+          max-age: 604800    # 7 天（秒）
+          immutable: true
+          public: true
+      chain:
+        compressed: true
+        cache: true
+        html-optimize: false  # 避免破坏 Thymeleaf
+
+  # ==================== Caffeine 本地内存缓存 ====================
+  # Spring Boot 3.x 原生支持，零外部依赖
+  # 统一配置：5 分钟过期，最多 1000 条
+  cache:
+    type: caffeine
+    caffeine:
+      spec: "maximumSize=1000, expireAfterWrite=300s, recordStats"
+
+# 验证码配置
+kaptcha:
+  border: "no"
+  border-color: 105,179,90
+  border-thickness: 1
+  image:
+    width: 120
+    height: 40
+  session:
+    key: captcha_code
+  text-producer:
+    font:
+      color: blue
+      size: 30
+      names: 宋体,楷体,微软雅黑
+    char:
+      length: 4
+      space: 5
+  noise:
+    color: black
+    impl: com.google.code.kaptcha.impl.DefaultNoise
+  obscurificator:
+    impl: com.google.code.kaptcha.impl.DefaultWaterRipple

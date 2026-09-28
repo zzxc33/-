@@ -1,0 +1,47 @@
+<!--
+  ========== fragments/player ==========
+  底部音乐播放器
+  使用方法：<th:replace="~{fragments/player :: player}">
+-->
+<div class="music-player" id="music-player" th:fragment="player">
+    <div class="player-left">
+        <div class="player-cover">
+            <img src="/images/default-cover.svg" alt="封面" id="player-cover-img">
+        </div>
+        <div class="player-info">
+            <div class="player-song">选择一首歌曲开始播放</div>
+            <div class="player-artist">NIGHTFALL 深夜电台</div>
+        </div>
+        <button class="player-like-btn" id="player-like-btn" title="喜欢当前歌曲" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:18px;transition:all .2s;">🤍</button>
+    </div>
+    <div class="player-center">
+        <div class="player-controls">
+            <button class="mode-btn" id="mode-btn" title="循环模式：列表循环">🔁</button>
+            <button class="prev-btn" title="上一首">⏮</button>
+            <button class="play-btn" title="播放/暂停">▶</button>
+            <button class="next-btn" title="下一首">⏭</button>
+            <button class="queue-btn" id="queue-btn" title="展开播放列表">☰</button>
+        </div>
+        <div class="player-progress">
+            <span class="time player-current">0:00</span>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+                <div class="progress-thumb"></div>
+            </div>
+            <span class="time player-duration">0:00</span>
+        </div>
+    </div>
+    <div class="player-right">
+        <a class="external-play-btn" href="#" target="_blank" title="在网易云音乐播放"
+           style="display:none; align-items:center; gap:5px; padding:6px 12px; background:rgba(245,158,11,.1); color:#F59E0B; text-decoration:none; border-radius:8px; font-size:12px; border:1px solid rgba(245,158,11,.2); transition:all .25s; font-weight:500; white-space:nowrap;"
+           onmouseover="this.style.background='rgba(245,158,11,.2)'" onmouseout="this.style.background='rgba(245,158,11,.1)'">
+            🌐 外部播放
+        </a>
+        <div class="volume-control">
+            <button title="音量">🔊</button>
+            <div class="volume-bar">
+                <div class="volume-fill" style="width: 70%"></div>
+            </div>
+        </div>
+    </div>
+</div>
