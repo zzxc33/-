@@ -121,12 +121,17 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
 
-            // 构建表单数据
+            // 构建表单数据（含 CSRF token — Spring Security 强制要求 POST）
             const formData = new URLSearchParams();
             formData.append('username', username);
             formData.append('password', password);
             if (captcha) {
                 formData.append('captcha', captcha);
+            }
+            // 从 Thymeleaf 自动注入的 hidden field 取 CSRF token
+            const csrfHidden = document.querySelector('input[name="_csrf"]');
+            if (csrfHidden) {
+                formData.append('_csrf', csrfHidden.value);
             }
 
             // 添加记住我

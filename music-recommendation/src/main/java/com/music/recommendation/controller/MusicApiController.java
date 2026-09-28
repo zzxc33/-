@@ -2,8 +2,12 @@ package com.music.recommendation.controller;
 
 import com.music.recommendation.common.ApiResponse;
 import com.music.recommendation.entity.Song;
+import com.music.recommendation.entity.User;
+import com.music.recommendation.repository.UserRepository;
 import com.music.recommendation.service.PlaylistService;
 import com.music.recommendation.service.SongService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,11 +24,14 @@ public class MusicApiController {
 
     private final SongService songService;
     private final PlaylistService playlistService;
+    private final UserRepository userRepository;
 
     public MusicApiController(SongService songService,
-                              PlaylistService playlistService) {
+                              PlaylistService playlistService,
+                              UserRepository userRepository) {
         this.songService = songService;
         this.playlistService = playlistService;
+        this.userRepository = userRepository;
     }
 
     // ==================== 首页聚合接口 ====================
@@ -76,15 +83,15 @@ public class MusicApiController {
     }
 
     @GetMapping("/songs/{id}")
-    public ApiResponse<Map<String, Object>> songDetail(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> songDetail(@PathVariable Long id) {
         return songService.getSongById(id)
-                .<ApiResponse<Map<String, Object>>>map(s -> {
+                .<ResponseEntity<ApiResponse<Map<String, Object>>>>map(s -> {
                     Map<String, Object> data = new HashMap<>();
                     data.put("song", s);
                     data.put("related", songService.getRelatedSongs(id, 6));
-                    return ApiResponse.ok(data);
+                    return ResponseEntity.ok(ApiResponse.ok(data));
                 })
-                .orElse(ApiResponse.notFound("歌曲不存在"));
+                .orElse(ApiResponse.notFoundEntity("歌曲不存在"));
     }
 
     @GetMapping("/songs/search")
@@ -111,22 +118,42 @@ public class MusicApiController {
         return ApiResponse.ok(playlistService.getHotPlaylists(clampLimit(limit)));
     }
 
-    @GetMapping("/playlists/{id}")
-    public ApiResponse<Map<String, Object>> playlistDetail(@PathVariable Long id) {
-        return playlistService.getPlaylistById(id)
-                .<ApiResponse<Map<String, Object>>>map(p -> {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("playlist", p);
-                    data.put("songs", playlistService.getPlaylistSongs(id));
-                    return ApiResponse.ok(data);
-                })
-                .orElse(ApiResponse.notFound("歌单不存在"));
+    /** 当前登录用户的歌单列表（JWT 或表单登录均可） */
+    @GetMapping("/playlists/mine")
+    public ResponseEntity<ApiResponse<List<?>>> myPlaylists(
+            @AuthenticationPrincipal User currentUserEntity) {
+        // JWT 登录时 principal 是 entity.User，表单登录时是 UserDetails
+        // 兼容两种情况：直接用 entity.User 类型
+        if (currentUserEntity == null) {
+            // 表单登录回退方案：从 UserDetails 取 username
+            Object principal = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication().getPrincipal();
+            if (principal instanceof org.springframework.security.core.userdetails.User ud) {
+                currentUserEntity = userRepository.findByUsername(ud.getUsername()).orElse(null);
+            }
+        }
+        if (currentUserEntity == null) {
+            return ApiResponse.unauthorizedEntity("请先登录");
+        }
+        return ResponseEntity.ok(ApiResponse.ok(playlistService.getUserPlaylists(currentUserEntity.getId())));
     }
 
     @GetMapping("/playlists/search")
     public ApiResponse<List<?>> searchPlaylists(@RequestParam String keyword) {
         if (keyword == null || keyword.isBlank()) return ApiResponse.ok(List.of());
         return ApiResponse.ok(playlistService.searchPlaylists(keyword.trim()));
+    }
+
+    @GetMapping("/playlists/{id}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> playlistDetail(@PathVariable Long id) {
+        return playlistService.getPlaylistById(id)
+                .<ResponseEntity<ApiResponse<Map<String, Object>>>>map(p -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("playlist", p);
+                    data.put("songs", playlistService.getPlaylistSongs(id));
+                    return ResponseEntity.ok(ApiResponse.ok(data));
+                })
+                .orElse(ApiResponse.notFoundEntity("歌单不存在"));
     }
 
     @GetMapping("/users/{userId}/playlists")

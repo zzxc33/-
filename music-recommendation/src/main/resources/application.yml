@@ -98,6 +98,13 @@ spring:
     servlet:
       content-type: text/html
 
+  # 🟢 DevTools：禁用 classpath restarts，防止手动 javac 编译的 .class 被缓存拦截
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+
   # 静态资源路径 + 🟢 性能优化：7 天强缓存 + 处理管线
   web:
     resources:

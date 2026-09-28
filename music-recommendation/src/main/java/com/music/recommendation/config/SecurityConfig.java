@@ -45,9 +45,11 @@ public class SecurityConfig {
                 // CORS 优先
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // CSRF：API 走 Token 不用 CSRF，页面保留表单提交
+                // CSRF：/api/** 用 JWT Token 无状态鉴权，/doLogin 是未登录用户表单提交也跳过 CSRF
+                //   （Thymeleaf 表单隐藏 _csrf 字段在原生 form submit 时自动生效，
+                //    但 fetch() 绕过了这一机制，统一忽略更安全）
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/**")
+                        .ignoringRequestMatchers("/api/**", "/doLogin")
                 )
 
                 // JWT Token 过滤器（放在 UsernamePasswordAuthenticationFilter 之前）
