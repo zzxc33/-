@@ -72,13 +72,15 @@ public class CollaborativeRecommender {
             finalScores.merge(entry.getKey(), entry.getValue() * ITEM_CF_WEIGHT, Double::sum);
         }
 
-        // 4. 按分数排序返回
-        return finalScores.entrySet().stream()
+        // 4. 按分数排序，批量加载返回（消除 N+1）
+        List<Long> topIds = finalScores.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .limit(limit)
-                .map(entry -> songRepository.findById(entry.getKey()).orElse(null))
-                .filter(Objects::nonNull)
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+        Map<Long, Song> songMap = songRepository.findAllById(topIds).stream()
+                .collect(Collectors.toMap(Song::getId, s -> s, (a, b) -> a));
+        return topIds.stream().map(songMap::get).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     // ==================== 基于用户的协同过滤 ====================
