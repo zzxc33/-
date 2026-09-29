@@ -169,11 +169,9 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
     }
 
     private List<Song> getExploreRecommendations(int limit) {
-        // === 优化：不再 findAll()，用 ORDER BY RAND() 取随机一批 ===
+        // 取一个更大的批次再 shuffle（不用 findAll()）
         int total = (int) songRepository.count();
         if (total == 0) return Collections.emptyList();
-        if (total <= limit) return new ArrayList<>(songRepository.findAll());
-        // 取一个更大的批次再 shuffle
         int batch = Math.min(total, limit * 4);
         List<Song> batchSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, batch));
         Collections.shuffle(batchSongs, RANDOM);

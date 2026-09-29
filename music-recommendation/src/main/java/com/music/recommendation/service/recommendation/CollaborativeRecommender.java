@@ -231,15 +231,17 @@ public class CollaborativeRecommender {
 
         if (coOccurrence.isEmpty()) return Collections.emptyMap();
 
-        // 4. 计算归一化相似度（共同用户数 / sqrt(被推荐歌曲用户数 × 候选歌曲用户数)）
+        // 4. 计算归一化相似度（余弦相似度：co-occurrence / sqrt(usersA × usersB)）
         double sqrtUsersA = Math.sqrt(relevantUsers.size());
         Map<Long, Double> similarityMap = new HashMap<>();
 
         for (Map.Entry<Long, Double> entry : coOccurrence.entrySet()) {
             Long candidateSongId = entry.getKey();
             double coCount = entry.getValue();
-            double sqrtUsersB = Math.sqrt(1 + coCount); // 近似估计
-            double similarity = coCount / (sqrtUsersA * sqrtUsersB);
+            // 精确查：有多少独立用户交互过候选歌曲
+            long distinctUsersB = interactionRepository.countDistinctUsersBySongId(candidateSongId);
+            if (distinctUsersB == 0) continue;
+            double similarity = coCount / (sqrtUsersA * Math.sqrt(distinctUsersB));
             similarityMap.put(candidateSongId, similarity);
         }
 

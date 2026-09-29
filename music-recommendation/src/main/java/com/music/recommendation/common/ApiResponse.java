@@ -28,19 +28,12 @@ public class ApiResponse<T> {
     /** 服務端時間戳 */
     private long timestamp;
 
-    /** 顯式全參構造（Lombok + 手動 javac 雙保險） */
+    /** 顯式便捷構造（自動填充 timestamp） */
     public ApiResponse(int code, String msg, T data) {
         this(code, msg, data, System.currentTimeMillis());
     }
 
-    public ApiResponse(int code, String msg, T data, long timestamp) {
-        this.code = code;
-        this.msg = msg;
-        this.data = data;
-        this.timestamp = timestamp;
-    }
-
-    // ==================== 工廠方法（返回 ApiResponse 本身，HTTP status 由調用方決定） ====================
+    // ==================== 工廠方法 ====================
 
     public static <T> ApiResponse<T> ok() {
         return ok(null);

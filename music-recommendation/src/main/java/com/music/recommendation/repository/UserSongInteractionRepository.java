@@ -57,4 +57,8 @@ public interface UserSongInteractionRepository extends JpaRepository<UserSongInt
     /** 批量获取多首歌曲的交互记录 */
     @Query("SELECT u FROM UserSongInteraction u WHERE u.songId IN :songIds")
     List<UserSongInteraction> findBySongIdIn(@Param("songIds") Collection<Long> songIds);
+
+    /** 精确计算喜欢/交互过某首歌的独立用户数（物品协同过滤算余弦相似度用） */
+    @Query("SELECT COUNT(DISTINCT u.userId) FROM UserSongInteraction u WHERE u.songId = :songId")
+    long countDistinctUsersBySongId(@Param("songId") Long songId);
 }

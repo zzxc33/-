@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "playlist_songs")
+@Table(name = "playlist_songs",
+       uniqueConstraints = @UniqueConstraint(name = "uk_playlist_song", columnNames = {"playlist_id", "song_id"}))
 public class PlaylistSong {
 
     @Id

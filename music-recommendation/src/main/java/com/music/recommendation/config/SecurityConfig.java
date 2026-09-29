@@ -68,9 +68,19 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/druid/**"
                         ).permitAll()
-                        // 小程序 REST API - 放行所有端点（JwtAuthFilter 自动从 Authorization 头解析 Token 注入用户，
-                        //   Controller 层可通过 SecurityContextHolder.getContext().getAuthentication() 获取当前用户）
-                        .requestMatchers("/api/**").permitAll()
+                        // 小程序 REST API - 分级鉴权
+                        //   GET/HEAD/OPTIONS：公开只读（首页、歌曲列表、搜索、推荐、排行榜）
+                        //   POST/PUT/DELETE：需要认证（播放记录、点赞、评论、创建歌单、更新资料）
+                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        // 注册/登录/登出显式放行
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+                        // 其余 POST/PUT/DELETE（播放记录、点赞、评论、歌单 CRUD、用户资料更新）需要认证
+                        .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").authenticated()
                         // 注册接口 - 明确允许 POST 请求
                         .requestMatchers(HttpMethod.POST, "/doRegister").permitAll()
                         // 管理后台 - 仅管理员可访问
