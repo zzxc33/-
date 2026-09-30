@@ -48,7 +48,8 @@ public class RecommendController {
         boolean isLoggedIn = currentUser != null;
 
         if (isLoggedIn) {
-            user = userService.findByUsername(currentUser.getUsername()).orElse(null);
+            String principalName = currentUser.getUsername();
+            user = userService.findByUsername(principalName).orElse(null);
             if (user != null) userId = user.getId();
         }
 
