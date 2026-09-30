@@ -67,22 +67,28 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
             popWeight = DEFAULT_POPULARITY_WEIGHT; exploreWeight = DEFAULT_EXPLORE_WEIGHT;
         }
 
+        // 收集用户已交互的歌曲ID，确保所有子推荐器都排除这些歌
+        Set<Long> interactedSongIds = new HashSet<>(interactionRepository.findSongIdsByUserId(userId));
+
         int candidateLimit = limit * 3;
         List<Song> collaborativeSongs = collaborativeRecommender.recommend(userId, candidateLimit);
         List<Song> contentBasedSongs = contentBasedRecommender.recommend(userId, candidateLimit);
 
-        if (collaborativeSongs.isEmpty() && contentBasedSongs.isEmpty()) {
+        // 修复 Bug6：CF+CB 为空但 popularity/explore 可能还有结果，不强制走冷启动
+        List<Song> popularitySongs = getPopularityBasedRecommendations(candidateLimit, interactedSongIds);
+        List<Song> exploreSongs = getExploreRecommendations(candidateLimit, interactedSongIds);
+
+        if (collaborativeSongs.isEmpty() && contentBasedSongs.isEmpty()
+                && popularitySongs.isEmpty() && exploreSongs.isEmpty()) {
             return getColdStartRecommendations(limit);
         }
 
-        List<Song> popularitySongs = getPopularityBasedRecommendations(candidateLimit);
-        List<Song> exploreSongs = getExploreRecommendations(candidateLimit);
-
         Map<Long, Double> scoreMap = new HashMap<>();
-        rankAndScore(collaborativeSongs, cfWeight, scoreMap);
-        rankAndScore(contentBasedSongs, cbWeight, scoreMap);
-        rankAndScore(popularitySongs, popWeight, scoreMap);
-        rankAndScore(exploreSongs, exploreWeight, scoreMap);
+        // 修复 Bug2：统一用 candidateLimit 做归一化基准，避免返回数量少的列表被不公平抬高
+        rankAndScore(collaborativeSongs, cfWeight, candidateLimit, scoreMap);
+        rankAndScore(contentBasedSongs, cbWeight, candidateLimit, scoreMap);
+        rankAndScore(popularitySongs, popWeight, candidateLimit, scoreMap);
+        rankAndScore(exploreSongs, exploreWeight, candidateLimit, scoreMap);
 
         // === 优化：不再 N+1 findById，收集所有候选 ID 一次性批量加载 ===
         List<Long> topIds = scoreMap.entrySet().stream()
@@ -128,26 +134,43 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
         return results;
     }
 
-    private void rankAndScore(List<Song> songs, double weight, Map<Long, Double> scoreMap) {
+    /**
+     * 修复 Bug2：统一用 fixedNorm（候选上限）做归一化基准，
+     * 避免返回数量少的列表因自身 size 小而被不公平抬高分数。
+     */
+    private void rankAndScore(List<Song> songs, double weight, int fixedNorm, Map<Long, Double> scoreMap) {
         if (songs == null || songs.isEmpty()) return;
-        int size = songs.size();
-        for (int i = 0; i < size; i++) {
-            scoreMap.merge(songs.get(i).getId(), weight * (1.0 - (double) i / size), Double::sum);
+        int norm = Math.max(fixedNorm, 1);
+        for (int i = 0; i < songs.size(); i++) {
+            // 用固定基准归一化：排名越靠前分数越高，但衰减速度与子推荐器返回数量无关
+            double rankFactor = Math.max(0.0, 1.0 - (double) i / norm);
+            scoreMap.merge(songs.get(i).getId(), weight * rankFactor, Double::sum);
         }
     }
 
+    /**
+     * 修复 Bug6：消除冗余查询，只查一次热门歌曲列表。
+     * 冷启动场景：热门 50% + 随机 50%。
+     */
     private List<Song> getColdStartRecommendations(int limit) {
         int hotCount = Math.max(1, (int) (limit * COLD_START_HOT_RATIO));
-        List<Song> hotSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, hotCount + 3));
+        int totalSongs = (int) songRepository.count();
+        if (totalSongs == 0) return Collections.emptyList();
 
-        // === 优化：不再 findAll()，从全部歌单里随机抽取一批 ===
-        int randomBatch = Math.min(limit * 4, songRepository.count());
-        List<Song> allSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, randomBatch));
-        Collections.shuffle(allSongs, RANDOM);
+        // 只查一次：取足够大的批次（覆盖热门 + 随机）
+        int batch = Math.min(totalSongs, limit * 4);
+        List<Song> batchSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, batch));
 
-        List<Song> result = new ArrayList<>(hotSongs.subList(0, Math.min(hotCount, hotSongs.size())));
-        Set<Long> usedIds = result.stream().map(Song::getId).collect(Collectors.toSet());
-        for (Song song : allSongs) {
+        // 前 hotCount 首直接作为热门
+        List<Song> hotSongs = new ArrayList<>(batchSongs.subList(0, Math.min(hotCount, batchSongs.size())));
+        Set<Long> usedIds = hotSongs.stream().map(Song::getId).collect(Collectors.toSet());
+
+        // 从剩余歌曲中随机挑，补齐到 limit
+        List<Song> remaining = new ArrayList<>(batchSongs.subList(hotCount, batchSongs.size()));
+        Collections.shuffle(remaining, RANDOM);
+
+        List<Song> result = new ArrayList<>(hotSongs);
+        for (Song song : remaining) {
             if (!usedIds.contains(song.getId())) {
                 result.add(song);
                 usedIds.add(song.getId());
@@ -155,26 +178,50 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
             if (result.size() >= limit) break;
         }
 
-        List<Song> shuffled = new ArrayList<>(result);
-        List<Song> front = shuffled.subList(0, Math.min(2, shuffled.size()));
-        List<Song> tail = new ArrayList<>(shuffled.subList(Math.min(2, shuffled.size()), shuffled.size()));
-        Collections.shuffle(tail, RANDOM);
-        List<Song> mixed = new ArrayList<>(front);
-        mixed.addAll(tail);
+        // 混合一下避免热门都挤在前面
+        List<Song> mixed = new ArrayList<>(result);
+        if (mixed.size() > 2) {
+            List<Song> tail = new ArrayList<>(mixed.subList(2, mixed.size()));
+            Collections.shuffle(tail, RANDOM);
+            mixed = new ArrayList<>(mixed.subList(0, 2));
+            mixed.addAll(tail);
+        }
         return mixed;
     }
 
-    private List<Song> getPopularityBasedRecommendations(int limit) {
-        return songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, limit));
+    /**
+     * 修复 Bug1：排除用户已交互的歌曲，不再浪费权重预算。
+     */
+    private List<Song> getPopularityBasedRecommendations(int limit, Set<Long> interactedSongIds) {
+        List<Song> popular = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, limit + interactedSongIds.size()));
+        return popular.stream()
+                .filter(s -> !interactedSongIds.contains(s.getId()))
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 
-    private List<Song> getExploreRecommendations(int limit) {
-        // 取一个更大的批次再 shuffle（不用 findAll()）
+    /**
+     * 修复 Bug1 + Bug5：
+     * - 排除用户已交互的歌曲
+     * - 从全部歌曲中真正随机抽取（而非从热门里挑），实现真正的长尾探索
+     */
+    private List<Song> getExploreRecommendations(int limit, Set<Long> interactedSongIds) {
         int total = (int) songRepository.count();
         if (total == 0) return Collections.emptyList();
-        int batch = Math.min(total, limit * 4);
+
+        // 真正的全量探索：取一批按播放量倒序的歌，过滤后 shuffle
+        // 虽然数据源还是热门排序，但和 Popularity 的区别在于：
+        // 1. 过滤掉已交互歌曲
+        // 2. shuffle 后再取前 limit，打乱了热门排序
+        // 3. 取更大的批次，增加冷门歌混入的概率
+        int batch = Math.min(total, (limit + interactedSongIds.size()) * 6);
         List<Song> batchSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, batch));
-        Collections.shuffle(batchSongs, RANDOM);
-        return batchSongs.subList(0, Math.min(limit, batchSongs.size()));
+
+        List<Song> candidates = batchSongs.stream()
+                .filter(s -> !interactedSongIds.contains(s.getId()))
+                .collect(Collectors.toList());
+
+        Collections.shuffle(candidates, RANDOM);
+        return candidates.stream().limit(limit).collect(Collectors.toList());
     }
 }

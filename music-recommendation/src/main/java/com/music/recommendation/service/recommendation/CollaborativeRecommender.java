@@ -233,13 +233,20 @@ public class CollaborativeRecommender {
 
         // 4. 计算归一化相似度（余弦相似度：co-occurrence / sqrt(usersA × usersB)）
         double sqrtUsersA = Math.sqrt(relevantUsers.size());
-        Map<Long, Double> similarityMap = new HashMap<>();
 
+        // 修复 Bug4：循环前批量查出所有候选歌曲的独立用户数，避免 N+1 SQL
+        Set<Long> candidateSongIds = coOccurrence.keySet();
+        Map<Long, Long> distinctUsersMap = new HashMap<>();
+        List<Object[]> batchCounts = interactionRepository.countDistinctUsersBySongIds(candidateSongIds);
+        for (Object[] row : batchCounts) {
+            distinctUsersMap.put((Long) row[0], (Long) row[1]);
+        }
+
+        Map<Long, Double> similarityMap = new HashMap<>();
         for (Map.Entry<Long, Double> entry : coOccurrence.entrySet()) {
             Long candidateSongId = entry.getKey();
             double coCount = entry.getValue();
-            // 精确查：有多少独立用户交互过候选歌曲
-            long distinctUsersB = interactionRepository.countDistinctUsersBySongId(candidateSongId);
+            long distinctUsersB = distinctUsersMap.getOrDefault(candidateSongId, 0L);
             if (distinctUsersB == 0) continue;
             double similarity = coCount / (sqrtUsersA * Math.sqrt(distinctUsersB));
             similarityMap.put(candidateSongId, similarity);

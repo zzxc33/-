@@ -4,6 +4,7 @@ import com.music.recommendation.entity.Song;
 import com.music.recommendation.entity.UserSongInteraction;
 import com.music.recommendation.repository.SongRepository;
 import com.music.recommendation.repository.UserSongInteractionRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -75,8 +76,10 @@ public class ContentBasedRecommender {
         normalizeProfile(userGenreProfile);
         normalizeProfile(userArtistProfile);
 
-        // 4. 获取所有候选歌曲（除去用户已交互的）
-        List<Song> allSongs = songRepository.findAll();
+        // 4. 获取候选歌曲（除去用户已交互的），限制批次避免全表扫描
+        int total = (int) songRepository.count();
+        int batch = Math.min(total, limit * 10);
+        List<Song> allSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, batch));
         List<Song> candidates = allSongs.stream()
                 .filter(s -> !interactedSongIds.contains(s.getId()))
                 .collect(Collectors.toList());
@@ -97,11 +100,13 @@ public class ContentBasedRecommender {
             }
         }
 
-        // 6. 按分数排序返回
+        // 6. 按分数排序返回（从已加载的 candidates Map 中取值，避免 N+1 findById）
+        Map<Long, Song> candidateMap = candidates.stream()
+                .collect(Collectors.toMap(Song::getId, s -> s));
         return scoreMap.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .limit(limit)
-                .map(entry -> songRepository.findById(entry.getKey()).orElse(null))
+                .map(entry -> candidateMap.get(entry.getKey()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -147,8 +152,11 @@ public class ContentBasedRecommender {
 
         Song currentSong = songOpt.get();
 
-        // 找到同风格、同歌手的歌曲作为候选
-        List<Song> candidates = songRepository.findAll().stream()
+        // 取一批候选歌曲，限制数量避免全表扫描
+        int total = (int) songRepository.count();
+        int batch = Math.min(total, limit * 10);
+        List<Song> allSongs = songRepository.findAllByOrderByPlayCountDesc(PageRequest.of(0, batch));
+        List<Song> candidates = allSongs.stream()
                 .filter(s -> !s.getId().equals(songId))
                 .collect(Collectors.toList());
 
@@ -168,10 +176,13 @@ public class ContentBasedRecommender {
             }
         }
 
+        // 从已加载的 candidates Map 取值，避免 N+1 findById
+        Map<Long, Song> candidateMap = candidates.stream()
+                .collect(Collectors.toMap(Song::getId, s -> s));
         return scoreMap.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .limit(limit)
-                .map(entry -> songRepository.findById(entry.getKey()).orElse(null))
+                .map(entry -> candidateMap.get(entry.getKey()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
