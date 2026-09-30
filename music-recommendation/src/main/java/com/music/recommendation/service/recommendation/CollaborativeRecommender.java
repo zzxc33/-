@@ -199,20 +199,14 @@ public class CollaborativeRecommender {
     /**
      * 找与指定歌曲最相似的歌曲
      * 相似度基于：同时喜欢这两首歌的用户比例（协同过滤思想）
-     * 优化：批量加载所有相关用户的交互记录，避免 N+1
+     * 优化：合并 findUserIdsByLikedSongId + findBySongId 为单次 findBySongId 查询
      */
     private Map<Long, Double> findSimilarSongs(Long songId, Set<Long> excludeSongIds, int limit) {
-        // 1. 获取喜欢/听过这首歌的所有用户
-        List<Long> usersWhoLikedSong = interactionRepository.findUserIdsByLikedSongId(songId);
-
-        // 再加入播放过这首歌的用户
+        // 1. 单次查询：获取所有与这首歌交互过的用户（替代原来的 findUserIdsByLikedSongId + findBySongId 两次查询）
         List<UserSongInteraction> allInteractionsForSong = interactionRepository.findBySongId(songId);
-        Set<Long> usersWhoInteracted = allInteractionsForSong.stream()
+        Set<Long> relevantUsers = allInteractionsForSong.stream()
                 .map(UserSongInteraction::getUserId)
                 .collect(Collectors.toSet());
-        // 合并
-        Set<Long> relevantUsers = new HashSet<>(usersWhoLikedSong);
-        relevantUsers.addAll(usersWhoInteracted);
 
         if (relevantUsers.isEmpty()) return Collections.emptyMap();
 

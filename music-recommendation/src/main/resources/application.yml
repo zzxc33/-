@@ -102,7 +102,7 @@ spring:
     suffix: .html
     mode: HTML
     encoding: UTF-8
-    cache: false
+    cache: true                       # 🟢 生产启用模板缓存，避免每次请求重编译
     servlet:
       content-type: text/html
 

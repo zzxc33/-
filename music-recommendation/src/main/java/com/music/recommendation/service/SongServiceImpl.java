@@ -86,8 +86,11 @@ public class SongServiceImpl implements SongService {
         return songRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit));
     }
 
-    /** 获取推荐歌曲（混合推荐引擎） */
+    /** 获取推荐歌曲（混合推荐引擎）
+     * 优化：推荐结果计算昂贵，加 5 分钟本地缓存（Caffeine expireAfterWrite=300s）
+     */
     @Override
+    @Cacheable(cacheNames = "recommendations", key = "#userId + ':' + #limit")
     public List<Song> getRecommendedSongs(Long userId, int limit) {
         return hybridRecommender.recommend(userId, limit);
     }
@@ -99,10 +102,15 @@ public class SongServiceImpl implements SongService {
         return songRepository.findByGenre(genre);
     }
 
-    /** 记录用户播放歌曲 */
+    /** 记录用户播放歌曲
+     * 优化：播放次数是高频递增，容忍短暂缓存不一致，
+     * 只清除当前歌曲和热门排行相关缓存，不清除整个 songs 缓存池
+     */
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "songs", allEntries = true)
+    @CacheEvict(cacheNames = "songs", key = "'song:'+#songId")
+    @CacheEvict(cacheNames = "songs", key = "'hot:50'")
+    @CacheEvict(cacheNames = "recommendations", allEntries = true)
     public void recordPlay(Long userId, Long songId) {
         songRepository.findById(songId).ifPresent(song -> {
             song.setPlayCount(song.getPlayCount() + 1);
@@ -121,10 +129,14 @@ public class SongServiceImpl implements SongService {
         }
     }
 
-    /** 切换用户点赞歌曲 */
+    /** 切换用户点赞歌曲
+     * 优化：定向清除当前歌曲 + 热门排行，避免清除整个 songs 缓存池
+     */
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "songs", allEntries = true)
+    @CacheEvict(cacheNames = "songs", key = "'song:'+#songId")
+    @CacheEvict(cacheNames = "songs", key = "'hot:50'")
+    @CacheEvict(cacheNames = "recommendations", allEntries = true)
     public void recordLike(Long userId, Long songId) {
         if (userId <= 0) return;
 
@@ -152,8 +164,11 @@ public class SongServiceImpl implements SongService {
         interactionRepository.save(interaction);
     }
 
-    /** 获取相关歌曲 */
+    /** 获取相关歌曲
+     * 优化：加缓存避免反复同风格 + 热门查询
+     */
     @Override
+    @Cacheable(cacheNames = "songs", key = "'related:'+#songId+':'+#limit")
     public List<Song> getRelatedSongs(Long songId, int limit) {
         Song currentSong = songRepository.findById(songId).orElse(null);
         if (currentSong == null) {

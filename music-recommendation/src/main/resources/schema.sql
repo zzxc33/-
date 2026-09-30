@@ -30,7 +30,10 @@ CREATE TABLE IF NOT EXISTS songs (
     like_count BIGINT DEFAULT 0,
     description TEXT,
     created_at DATETIME,
-    UNIQUE KEY idx_song_title_artist (title(100), artist(100))
+    UNIQUE KEY idx_song_title_artist (title(100), artist(100)),
+    INDEX idx_songs_genre (genre),
+    INDEX idx_songs_play_count (play_count DESC),
+    INDEX idx_songs_like_count (like_count DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS playlists (
@@ -67,6 +70,8 @@ CREATE TABLE IF NOT EXISTS user_song_interactions (
     liked_at DATETIME,
     created_at DATETIME,
     UNIQUE KEY uk_user_song (user_id, song_id),
+    INDEX idx_interactions_song_id (song_id),
+    INDEX idx_interactions_user_id (user_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -78,6 +83,7 @@ CREATE TABLE IF NOT EXISTS comments (
     content VARCHAR(500) NOT NULL,
     like_count BIGINT DEFAULT 0,
     created_at DATETIME,
+    INDEX idx_comments_song_id (song_id),
     FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
