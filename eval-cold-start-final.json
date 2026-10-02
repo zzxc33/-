@@ -1,0 +1,56 @@
+﻿{
+    "code":  0,
+    "msg":  "ok",
+    "data":  {
+                 "timestamp":  "Fri Oct 02 17:17:05 CST 2026",
+                 "method":  "Cold-Start Simulation (ä¿ç 3 æ¡äº¤äºè®­ç», å\u0085¶ä½å ground truth, cap=20)",
+                 "algorithms":  [
+                                    {
+                                        "algorithm":  "ååè¿æ»¤ (å·å¯å¨æ¨¡æ)",
+                                        "testUsers":  48,
+                                        "precision@5":  0.475,
+                                        "precision@10":  0.273,
+                                        "recall@5":  0.475,
+                                        "recall@10":  0.546,
+                                        "ndcg@5":  0.514,
+                                        "ndcg@10":  0.553,
+                                        "durationMs":  10896
+                                    },
+                                    {
+                                        "algorithm":  "ALS ç©éµåè§£ (å·å¯å¨æ¨¡æ)",
+                                        "testUsers":  48,
+                                        "precision@5":  0.083,
+                                        "precision@10":  0.083,
+                                        "recall@5":  0.083,
+                                        "recall@10":  0.167,
+                                        "ndcg@5":  0.099,
+                                        "ndcg@10":  0.145,
+                                        "durationMs":  1386
+                                    },
+                                    {
+                                        "algorithm":  "å\u0085å®¹æ¨è (å·å¯å¨æ¨¡æ)",
+                                        "testUsers":  48,
+                                        "precision@5":  0.329,
+                                        "precision@10":  0.225,
+                                        "recall@5":  0.329,
+                                        "recall@10":  0.45,
+                                        "ndcg@5":  0.379,
+                                        "ndcg@10":  0.442,
+                                        "durationMs":  1561
+                                    },
+                                    {
+                                        "algorithm":  "æ··åæ¨è (å·å¯å¨æ¨¡æ)",
+                                        "testUsers":  48,
+                                        "precision@5":  0.45,
+                                        "precision@10":  0.279,
+                                        "recall@5":  0.45,
+                                        "recall@10":  0.558,
+                                        "ndcg@5":  0.497,
+                                        "ndcg@10":  0.557,
+                                        "durationMs":  10928
+                                    }
+                                ],
+                 "totalMs":  24830
+             },
+    "timestamp":  1790932625622
+}

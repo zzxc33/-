@@ -79,7 +79,7 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
         }
 
         // === Step 3: 计算最终权重（基础档 + 动态因子） ===
-        WeightResult weights = computeFinalWeights(tier, userId, collaborativeSongs);
+        WeightResult weights = computeFinalWeights(tier, userId, collaborativeSongs, alsSongs);
 
         log.info("[HybridAdaptive] userId={} interactions={} tierMin={} " +
                         "→ CF={} ALS={} CB={} Pop={} Exp={} | cfSize={} alsSize={} cbSize={}",
@@ -172,18 +172,27 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
      */
     private WeightResult computeFinalWeights(RecommenderProperties.Tier tier,
                                              Long userId,
-                                             List<Song> cfSongs) {
+                                             List<Song> cfSongs,
+                                             List<Song> alsSongs) {
         double cfTotal = tier.getCf();
         double cb = tier.getCb();
         double pop = tier.getPopularity();
         double exp = tier.getExplore();
 
         // === 先拆分 CF 为 CF邻居 + ALS隐因子 ===
-        double cfRatio = 0.60, alsRatio = 0.40;
+        // 数据驱动：ALS 在本数据集 N@10 ≈ 0.115，CF N@10 ≈ 0.55 — ALS 质量远不如 ItemCF
+        // 因此默认 CF 邻居权重为主（85%），ALS 只做辅助（15%）
+        // 注意：CF 空结果时不能像原逻辑那样向 ALS 倾斜（原假设"ALS 对稀疏更鲁棒"在本数据集不成立）
+        double cfRatio = 0.85, alsRatio = 0.15;
         if (cfSongs.size() < props.getDynamic().getCfMinResults()) {
-            // CF 空结果 → 向 ALS 倾斜（ALS 对稀疏更鲁棒）
-            cfRatio = 0.30; alsRatio = 0.70;
-            log.debug("[HybridAdaptive] CF empty, shift ratio CF:ALS 0.60:0.40 → 0.30:0.70");
+            // CF 返回太少 → ALS 权重压到极低（ALS 也不鲁棒）
+            cfRatio = 0.95; alsRatio = 0.05;
+            log.debug("[HybridAdaptive] CF empty, minimize ALS ratio CF:ALS 0.85:0.15 → 0.95:0.05");
+        }
+        // ALS 返回空 → ALS 权重直接清零
+        if (alsSongs == null || alsSongs.isEmpty()) {
+            alsRatio = 0.0;
+            cfRatio = 1.0;
         }
         double cf = cfTotal * cfRatio;
         double als = cfTotal * alsRatio;

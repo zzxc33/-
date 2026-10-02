@@ -1,0 +1,56 @@
+﻿{
+    "code":  0,
+    "msg":  "ok",
+    "data":  {
+                 "timestamp":  "Fri Oct 02 17:17:31 CST 2026",
+                 "method":  "Hold-Out (20% çä½æµè¯é)",
+                 "algorithms":  [
+                                    {
+                                        "algorithm":  "ååè¿æ»¤",
+                                        "testUsers":  50,
+                                        "precision@5":  0.34,
+                                        "precision@10":  0.206,
+                                        "recall@5":  0.44,
+                                        "recall@10":  0.515,
+                                        "ndcg@5":  0.471,
+                                        "ndcg@10":  0.511,
+                                        "durationMs":  10497
+                                    },
+                                    {
+                                        "algorithm":  "ALS ç©éµåè§£",
+                                        "testUsers":  50,
+                                        "precision@5":  0.084,
+                                        "precision@10":  0.07,
+                                        "recall@5":  0.094,
+                                        "recall@10":  0.159,
+                                        "ndcg@5":  0.104,
+                                        "ndcg@10":  0.134,
+                                        "durationMs":  1797
+                                    },
+                                    {
+                                        "algorithm":  "å\u0085å®¹æ¨è",
+                                        "testUsers":  50,
+                                        "precision@5":  0.288,
+                                        "precision@10":  0.182,
+                                        "recall@5":  0.378,
+                                        "recall@10":  0.469,
+                                        "ndcg@5":  0.396,
+                                        "ndcg@10":  0.438,
+                                        "durationMs":  1496
+                                    },
+                                    {
+                                        "algorithm":  "æ··åæ¨è",
+                                        "testUsers":  50,
+                                        "precision@5":  0.376,
+                                        "precision@10":  0.212,
+                                        "recall@5":  0.492,
+                                        "recall@10":  0.542,
+                                        "ndcg@5":  0.52,
+                                        "ndcg@10":  0.543,
+                                        "durationMs":  11952
+                                    }
+                                ],
+                 "totalMs":  25769
+             },
+    "timestamp":  1790932651629
+}

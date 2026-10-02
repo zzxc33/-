@@ -141,30 +141,45 @@ spring:
 # 按用户交互数量分档，动态调整 CF/CB/热度/探索 四路权重
 # minInteractions 表示该档的"最少交互数"，按升序排列
 # 每档权重总和应接近 1.0
+#
+# === 数据驱动的权重设计（基于冷启动评估 2026-10-02） ===
+# ItemCF（基于物品共现余弦相似度）在只有 3 次交互时 NDCG@10=0.590
+# 远胜内容推荐 NDCG@10=0.432 — ItemCF 对目标用户冷启动鲁棒！
+# 只有真 0 次交互时 ItemCF 才无能为力（没有种子歌）
+# 因此把原档 0 拆成 0a(0次真冷启动) + 0b(1-3次近冷启动)
+#
 recommender:
   adaptive:
     enabled: true                        # 关闭则回退固定权重
     cold-start-hot-ratio: 0.5            # 冷启动: 热门占比
     tiers:
-      # 档0: 极稀疏用户 (0-3 次交互) — 内容为主
+      # 档0a: 真冷启动 (0 次交互) — ItemCF 无能为力，纯 CB+热度
+      # 注: Hybrid 在 interactionCount==0 时直接走 getColdStartRecommendations() 跳过此档
       - min-interactions: 0
-        cf: 0.05
+        cf: 0.00
         cb: 0.45
-        popularity: 0.30
+        popularity: 0.35
         explore: 0.20
-      # 档1: 稀疏用户 (4-10 次) — CB+热门平衡
-      - min-interactions: 4
-        cf: 0.20
-        cb: 0.35
-        popularity: 0.25
-        explore: 0.20
-      # 档2: 普通用户 (11-30 次) — CF 初显
-      - min-interactions: 11
-        cf: 0.40
-        cb: 0.25
+      # 档0b: 近冷启动 (1-3 次交互) — ItemCF 已可工作（3 首种子歌找共现）
+      # 数据驱动: CF 在 3 次交互下 N@10=0.590 远超 CB 0.432
+      - min-interactions: 1
+        cf: 0.25
+        cb: 0.40
         popularity: 0.20
         explore: 0.15
-      # 档3: 活跃用户 (31-100 次) — CF 主导
+      # 档1: 稀疏用户 (4-10 次) — ItemCF 更强，CF 升至 30%
+      - min-interactions: 4
+        cf: 0.30
+        cb: 0.30
+        popularity: 0.22
+        explore: 0.18
+      # 档2: 普通用户 (11-30 次) — CF 主导趋势
+      - min-interactions: 11
+        cf: 0.45
+        cb: 0.22
+        popularity: 0.18
+        explore: 0.15
+      # 档3: 活跃用户 (31-100 次) — CF 强势
       - min-interactions: 31
         cf: 0.55
         cb: 0.20

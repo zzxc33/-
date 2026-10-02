@@ -28,7 +28,7 @@ class RecommendationEvaluatorMetricTest {
 
     @BeforeEach
     void setUp() {
-        evaluator = new RecommendationEvaluator(interactionRepository, null, null, null);
+        evaluator = new RecommendationEvaluator(interactionRepository, null, null, null, null);
     }
 
     // ==================== Precision@K ====================

@@ -37,15 +37,18 @@ public class RecommendationEvaluator {
 
     private final UserSongInteractionRepository interactionRepository;
     private final CollaborativeRecommender cfRecommender;
+    private final AlsRecommender alsRecommender;
     private final ContentBasedRecommender cbRecommender;
     private final HybridRecommenderService hybridRecommender;
 
     public RecommendationEvaluator(UserSongInteractionRepository interactionRepository,
                                    CollaborativeRecommender cfRecommender,
+                                   AlsRecommender alsRecommender,
                                    ContentBasedRecommender cbRecommender,
                                    HybridRecommenderService hybridRecommender) {
         this.interactionRepository = interactionRepository;
         this.cfRecommender = cfRecommender;
+        this.alsRecommender = alsRecommender;
         this.cbRecommender = cbRecommender;
         this.hybridRecommender = hybridRecommender;
     }
@@ -138,9 +141,10 @@ public class RecommendationEvaluator {
                 testSets.size(),
                 testSets.values().stream().mapToInt(Set::size).average().orElse(0));
 
-        // 4. 分别评估三种算法（每个算法独立做删除-推荐-恢复循环）
+        // 4. 分别评估四种算法（每个算法独立做删除-推荐-恢复循环）
         List<EvalResult> results = new ArrayList<>();
         results.add(evaluateAlgorithm("协同过滤", testSets, uid -> cfRecommender.recommend(uid, 20)));
+        results.add(evaluateAlgorithm("ALS 矩阵分解", testSets, uid -> alsRecommender.recommend(uid, 20)));
         results.add(evaluateAlgorithm("内容推荐", testSets, uid -> cbRecommender.recommend(uid, 20)));
         results.add(evaluateAlgorithm("混合推荐", testSets, uid -> hybridRecommender.recommend(uid, 20)));
 
@@ -386,6 +390,7 @@ public class RecommendationEvaluator {
 
         List<EvalResult> results = new ArrayList<>();
         results.add(evaluateAlgorithmCold("协同过滤 (冷启动模拟)", groundTruthSets, uid -> cfRecommender.recommend(uid, 20)));
+        results.add(evaluateAlgorithmCold("ALS 矩阵分解 (冷启动模拟)", groundTruthSets, uid -> alsRecommender.recommend(uid, 20)));
         results.add(evaluateAlgorithmCold("内容推荐 (冷启动模拟)", groundTruthSets, uid -> cbRecommender.recommend(uid, 20)));
         results.add(evaluateAlgorithmCold("混合推荐 (冷启动模拟)", groundTruthSets, uid -> hybridRecommender.recommend(uid, 20)));
 
