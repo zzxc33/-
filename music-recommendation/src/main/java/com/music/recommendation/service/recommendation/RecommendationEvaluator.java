@@ -308,4 +308,158 @@ public class RecommendationEvaluator {
         if (idcg == 0) return 0.0;
         return dcg / idcg;
     }
+
+    // ==================== 冷启动模拟评估 ====================
+
+    /** 模拟冷启动：每个活跃用户只留 3 条交互做训练 */
+    private static final int SIM_COLD_START_TRAIN_MAX = 3;
+    /** ground truth 上限：5 首，和老用户评估的 20% 留出量级一致（约 4-6 首），保证指标可比 */
+    private static final int SIM_COLD_START_GT_CAP = 5;
+    /** 只取交互数 ≥ 10 的用户（保证有足够数据"删"出来做 ground truth） */
+    private static final int SIM_COLD_START_MIN_INTERACTIONS = 10;
+
+    /**
+     * 模拟冷启动评估：取活跃用户，每人只留 1-3 条交互做训练集，其余做 ground truth
+     *
+     * 方法论：
+     *   1. 取所有交互数 ≥ 10 的活跃用户（保证 ground truth ≥ 7 首）
+     *   2. 对每个用户，随机挑 3 条交互"保留"（模拟新用户只有 3 次交互）
+     *   3. 其余全部删除 + flush（推荐器只能看到 3 条）
+     *   4. 调推荐 → 比对 ground truth → 恢复被删除的交互
+     *
+     * 预期：CF 在只有 3 条交互时邻居极少，表现最差；
+     *       CB 靠风格/歌手相似度不依赖邻居；
+     *       Hybrid 自动切到冷启动档位（CF 5% / CB 45%）应该最优
+     */
+    public List<EvalResult> evaluateColdStart() {
+        long start = System.currentTimeMillis();
+
+        // 1. 获取全部交互
+        List<UserSongInteraction> allInteractions = interactionRepository.findAll();
+        if (allInteractions.isEmpty()) {
+            log.warn("[Evaluator-Cold] 无交互数据");
+            return Collections.emptyList();
+        }
+
+        // 2. 按用户分组，只保留交互数 ≥ 10 的活跃用户
+        Random random = new Random(RANDOM_SEED + 999L);
+        Map<Long, List<UserSongInteraction>> userInteractions = allInteractions.stream()
+                .collect(Collectors.groupingBy(UserSongInteraction::getUserId));
+
+        // 3. 对每个活跃用户：留 min(3, size-7) 条做训练 → 其余做 ground truth
+        Map<Long, Set<Long>> groundTruthSets = new LinkedHashMap<>();
+
+        for (Map.Entry<Long, List<UserSongInteraction>> entry : userInteractions.entrySet()) {
+            Long userId = entry.getKey();
+            List<UserSongInteraction> interactions = entry.getValue();
+            int total = interactions.size();
+            if (total < SIM_COLD_START_MIN_INTERACTIONS) continue;
+
+            List<Long> songIds = interactions.stream()
+                    .map(UserSongInteraction::getSongId)
+                    .distinct()
+                    .collect(Collectors.toList());
+            Collections.shuffle(songIds, random);
+
+            // 训练集：最多 3 条（模拟冷启动）
+            int trainSize = Math.min(SIM_COLD_START_TRAIN_MAX, songIds.size() - 1);
+            // ground truth：删掉训练集剩下的，最多 20 条
+            List<Long> gtList = songIds.subList(trainSize, songIds.size());
+            if (gtList.size() > SIM_COLD_START_GT_CAP) {
+                gtList = gtList.subList(0, SIM_COLD_START_GT_CAP);
+            }
+            groundTruthSets.put(userId, new HashSet<>(gtList));
+        }
+
+        if (groundTruthSets.isEmpty()) {
+            log.warn("[Evaluator-Cold] 没有足够的活跃用户模拟冷启动");
+            return Collections.emptyList();
+        }
+
+        // 4. 复用 evaluateAlgorithm 但反向：删训练集以外的（即删 ground truth 保留训练集）
+        //    但 evaluateAlgorithm 的语义是"删掉 ground truth → 让推荐器只看到训练集"
+        //    所以 groundTruthSets 就是我们要"删掉"的集合！直接复用。
+
+        log.info("[Evaluator-Cold] 冷启动模拟：{} 个用户，每人保留 1-3 条训练，平均 ground truth {} 首",
+                groundTruthSets.size(),
+                groundTruthSets.values().stream().mapToInt(Set::size).average().orElse(0));
+
+        List<EvalResult> results = new ArrayList<>();
+        results.add(evaluateAlgorithmCold("协同过滤 (冷启动模拟)", groundTruthSets, uid -> cfRecommender.recommend(uid, 20)));
+        results.add(evaluateAlgorithmCold("内容推荐 (冷启动模拟)", groundTruthSets, uid -> cbRecommender.recommend(uid, 20)));
+        results.add(evaluateAlgorithmCold("混合推荐 (冷启动模拟)", groundTruthSets, uid -> hybridRecommender.recommend(uid, 20)));
+
+        long totalMs = System.currentTimeMillis() - start;
+        log.info("[Evaluator-Cold] 冷启动评估完成，总耗时 {} ms", totalMs);
+
+        return results;
+    }
+
+    /**
+     * 冷启动专用评估：复用删除-推荐-恢复，但加保护确保训练集不为空
+     */
+    private EvalResult evaluateAlgorithmCold(String algoName,
+                                             Map<Long, Set<Long>> groundTruthSets,
+                                             java.util.function.Function<Long, List<Song>> recommender) {
+        long start = System.currentTimeMillis();
+
+        double sumPrecision5 = 0, sumPrecision10 = 0;
+        double sumRecall5 = 0, sumRecall10 = 0;
+        double sumNdcg5 = 0, sumNdcg10 = 0;
+        int validUsers = 0;
+
+        log.info("[Evaluator-Cold] 开始评估: {}", algoName);
+
+        for (Map.Entry<Long, Set<Long>> entry : groundTruthSets.entrySet()) {
+            Long userId = entry.getKey();
+            Set<Long> gtSongIds = entry.getValue();
+            if (gtSongIds.isEmpty()) continue;
+
+            // ===== 删除 ground truth 交互，保留训练集（1-3 条）=====
+            List<UserSongInteraction> deleted = deleteTestInteractions(userId, gtSongIds);
+
+            List<Song> recommended;
+            try {
+                interactionRepository.flush();
+                recommended = recommender.apply(userId);
+            } catch (Exception e) {
+                log.warn("[Evaluator-Cold] {} 用户 {} 异常: {}", algoName, userId, e.getMessage());
+                recommended = Collections.emptyList();
+            } finally {
+                restoreInteractions(deleted);
+                interactionRepository.flush();
+            }
+
+            // 提取推荐结果
+            List<Long> recommendedIds = recommended.stream()
+                    .map(Song::getId)
+                    .collect(Collectors.toList());
+
+            Set<Long> groundTruth = new HashSet<>(gtSongIds);
+            sumPrecision5 += precisionAt(recommendedIds, groundTruth, 5);
+            sumPrecision10 += precisionAt(recommendedIds, groundTruth, 10);
+            sumRecall5 += recallAt(recommendedIds, groundTruth, 5);
+            sumRecall10 += recallAt(recommendedIds, groundTruth, 10);
+            sumNdcg5 += ndcgAt(recommendedIds, groundTruth, 5);
+            sumNdcg10 += ndcgAt(recommendedIds, groundTruth, 10);
+            validUsers++;
+        }
+
+        EvalResult result = new EvalResult();
+        result.algorithm = algoName;
+        result.testUsers = validUsers;
+
+        if (validUsers > 0) {
+            result.precisionAt5 = sumPrecision5 / validUsers;
+            result.precisionAt10 = sumPrecision10 / validUsers;
+            result.recallAt5 = sumRecall5 / validUsers;
+            result.recallAt10 = sumRecall10 / validUsers;
+            result.ndcgAt5 = sumNdcg5 / validUsers;
+            result.ndcgAt10 = sumNdcg10 / validUsers;
+        }
+        result.durationMs = System.currentTimeMillis() - start;
+
+        log.info("[Evaluator-Cold] {} 完成: {}", algoName, result.toMap());
+        return result;
+    }
 }

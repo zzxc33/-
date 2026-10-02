@@ -287,4 +287,25 @@ public class AdminRecommendController {
 
         return ApiResponse.ok(response);
     }
+
+    /**
+     * 冷启动模拟评估：从活跃用户中每人只留 3 条交互做训练，其余做 ground truth
+     * 用于验证混合推荐在冷启动场景下是否优于单一 CF
+     */
+    @GetMapping("/evaluate/cold-start")
+    public ApiResponse<Map<String, Object>> evaluateColdStart() {
+        long start = System.currentTimeMillis();
+
+        List<RecommendationEvaluator.EvalResult> results = evaluator.evaluateColdStart();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("timestamp", new Date().toString());
+        response.put("method", "Cold-Start Simulation (保留 3 条交互训练, 其余做 ground truth, cap=20)");
+        response.put("algorithms", results.stream()
+                .map(RecommendationEvaluator.EvalResult::toMap)
+                .collect(Collectors.toList()));
+        response.put("totalMs", System.currentTimeMillis() - start);
+
+        return ApiResponse.ok(response);
+    }
 }
