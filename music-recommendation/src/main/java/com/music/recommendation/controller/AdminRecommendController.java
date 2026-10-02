@@ -8,6 +8,7 @@ import com.music.recommendation.repository.UserRepository;
 import com.music.recommendation.repository.UserSongInteractionRepository;
 import com.music.recommendation.service.recommendation.CollaborativeRecommender;
 import com.music.recommendation.service.recommendation.ContentBasedRecommender;
+import com.music.recommendation.service.recommendation.AlsRecommender;
 import com.music.recommendation.service.recommendation.HybridRecommenderService;
 import com.music.recommendation.service.recommendation.RecommendationEvaluator;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,7 @@ public class AdminRecommendController {
 
     private final HybridRecommenderService hybridRecommender;
     private final CollaborativeRecommender cfRecommender;
+    private final AlsRecommender alsRecommender;
     private final ContentBasedRecommender cbRecommender;
     private final UserSongInteractionRepository interactionRepository;
     private final UserRepository userRepository;
@@ -51,6 +53,7 @@ public class AdminRecommendController {
 
     public AdminRecommendController(HybridRecommenderService hybridRecommender,
                                     CollaborativeRecommender cfRecommender,
+                                    AlsRecommender alsRecommender,
                                     ContentBasedRecommender cbRecommender,
                                     UserSongInteractionRepository interactionRepository,
                                     UserRepository userRepository,
@@ -58,6 +61,7 @@ public class AdminRecommendController {
                                     RecommendationEvaluator evaluator) {
         this.hybridRecommender = hybridRecommender;
         this.cfRecommender = cfRecommender;
+        this.alsRecommender = alsRecommender;
         this.cbRecommender = cbRecommender;
         this.interactionRepository = interactionRepository;
         this.userRepository = userRepository;
@@ -104,14 +108,36 @@ public class AdminRecommendController {
         }
         result.put("userStage", userStage);
 
-        // 三种算法单独推荐
+        // 四种算法单独推荐
         List<Song> cfResults = cfRecommender.recommend(userId, limit);
+        List<Song> alsResults = alsRecommender.recommend(userId, limit);
         List<Song> cbResults = cbRecommender.recommend(userId, limit);
         List<Song> hybridResults = hybridRecommender.recommend(userId, limit);
 
         result.put("collaborativeFiltering", buildAlgoSection("协同过滤 (UserCF+ItemCF)", cfResults));
+        result.put("alsMatrixFactorization", buildAlgoSection("ALS 矩阵分解 (隐因子)", alsResults));
         result.put("contentBased", buildAlgoSection("内容推荐 (风格+歌手+专辑)", cbResults));
         result.put("hybridFinal", buildAlgoSection("混合推荐最终结果", hybridResults));
+
+        // ALS 模型信息
+        AlsRecommender.AlsModel model = alsRecommender.getModel();
+        if (model != null) {
+            result.put("alsModel", Map.of(
+                    "nUsers", model.nUsers,
+                    "nSongs", model.nSongs,
+                    "latentDim", model.U.length > 0 ? model.U[0].length : 0
+            ));
+        }
+
+        // 档位信息
+        String tierName;
+        if (interactionCount == 0) tierName = "冷启动 (档0之前)";
+        else if (interactionCount <= 3) tierName = "档0: 极稀疏 (0-3)";
+        else if (interactionCount <= 10) tierName = "档1: 稀疏 (4-10)";
+        else if (interactionCount <= 30) tierName = "档2: 普通 (11-30)";
+        else if (interactionCount <= 100) tierName = "档3: 活跃 (31-100)";
+        else tierName = "档4: 专家 (100+)";
+        result.put("adaptiveTier", tierName);
 
         return ApiResponse.ok(result);
     }
@@ -159,7 +185,19 @@ public class AdminRecommendController {
     }
 
     // ============================================
-    //  4. 内容推荐单独调用
+    //  4. ALS 矩阵分解单独调用
+    // ============================================
+
+    @GetMapping("/als")
+    public ApiResponse<Map<String, Object>> als(
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ApiResponse.ok(buildResult("ALS 矩阵分解 (隐因子)",
+                alsRecommender.recommend(userId, limit)));
+    }
+
+    // ============================================
+    //  5. 内容推荐单独调用
     // ============================================
 
     @GetMapping("/cb")

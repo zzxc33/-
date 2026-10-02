@@ -2,317 +2,326 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>推荐引擎诊断 - 管理员后台</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <title>推荐引擎诊断</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        .algo-section { margin-bottom: 28px; }
-        .algo-section h3 {
-            font-size: 15px; font-weight: 600; color: var(--text-primary);
-            margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;
-        }
-        .algo-badge {
-            font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 500;
-        }
-        .algo-badge.cf { background: rgba(245,158,11,0.15); color: #F59E0B; }
-        .algo-badge.cb { background: rgba(139,92,246,0.15); color: #8B5CF6; }
-        .algo-badge.hybrid { background: rgba(6,182,212,0.15); color: #06B6D4; }
-        .algo-badge.pop { background: rgba(239,68,68,0.15); color: #EF4444; }
-        .algo-badge.explore { background: rgba(34,197,94,0.15); color: #22C55E; }
-        .song-row {
-            display: grid; grid-template-columns: 28px 1fr auto; gap: 12px;
-            padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px;
-        }
-        .song-row:last-child { border-bottom: none; }
-        .song-rank { color: var(--text-tertiary); font-weight: 600; text-align: center; padding-top: 1px; }
-        .song-meta { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
-        .song-genre {
-            display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 8px;
-            background: rgba(255,255,255,0.05); color: var(--text-secondary);
-        }
-        .song-stats { color: var(--text-tertiary); font-size: 11px; text-align: right; }
-        .weight-bar {
-            height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08);
-            margin-top: 6px; overflow: hidden;
-        }
-        .weight-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-        .stage-pill {
-            display: inline-block; padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 500;
-        }
-        .stage-cold { background: rgba(239,68,68,0.15); color: #EF4444; }
-        .stage-sparse { background: rgba(245,158,11,0.15); color: #F59E0B; }
-        .stage-normal { background: rgba(34,197,94,0.15); color: #22C55E; }
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; }
+        .page-title { color: #fff; font-weight: 700; letter-spacing: 1px; }
+        .glass-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; color: #fff; }
+        .stat-card { background: linear-gradient(135deg, #0f3460, #16213e); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .tier-badge { font-size: 0.85rem; padding: 6px 14px; border-radius: 20px; }
+        .tier-0 { background: #6c757d; }
+        .tier-1 { background: #0d6efd; }
+        .tier-2 { background: #059669; }
+        .tier-3 { background: #d97706; }
+        .tier-4 { background: #dc2626; }
+        .algo-card { background: rgba(255,255,255,0.06); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px; }
+        .algo-header { padding: 10px 16px; border-radius: 12px 12px 0 0; font-weight: 600; }
+        .algo-cf { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+        .algo-als { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+        .algo-cb { background: linear-gradient(90deg, #10b981, #059669); }
+        .algo-hybrid { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .song-item { display: flex; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.88rem; }
+        .song-item:last-child { border-bottom: none; }
+        .song-rank { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; background: rgba(255,255,255,0.15); font-size: 0.75rem; margin-right: 8px; }
+        .chart-container { position: relative; height: 280px; }
+        .btn-eval { background: linear-gradient(90deg, #ef4444, #dc2626); border: none; color: #fff; font-weight: 600; }
+        .btn-eval:hover { opacity: 0.9; color: #fff; }
+        .eval-result { font-family: 'Courier New', monospace; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-<div class="admin-layout">
-    <!-- 侧边栏（复用 dashboard 的，active 换成 recommend）-->
-    <aside class="admin-sidebar">
-        <div class="logo">
-            <a href="/admin"><div class="logo-icon">🎵</div>
-                <div><div class="logo-text">Admin<span>Panel</span></div><div class="logo-sub">Management Console</div></div>
-            </a>
-        </div>
-        <nav>
-            <a href="/admin"><span class="nav-icon">📊</span>控制台</a>
-            <a href="/admin/songs"><span class="nav-icon">🎵</span>歌曲管理</a>
-            <a href="/admin/users"><span class="nav-icon">👤</span>用户管理</a>
-            <a href="/admin/recommend" class="active"><span class="nav-icon">⚙️</span>推荐引擎</a>
-            <a href="/index"><span class="nav-icon">🏠</span>返回前台</a>
-        </nav>
-    </aside>
-    <main class="admin-main">
-        <div class="admin-header">
-            <h1><span class="header-icon">⚙️</span>推荐引擎诊断</h1>
-            <div class="admin-user">
-                <div class="avatar" th:text="${admin != null ? admin.nickname.substring(0,1) : 'A'}">A</div>
-                <div><div class="admin-name" th:text="${admin != null ? admin.nickname : '管理员'}">管理员</div><div class="admin-role">SUPER ADMIN</div></div>
-            </div>
-        </div>
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="page-title mb-0">🎵 推荐引擎诊断中心</h2>
+        <a href="/" class="text-white-50 small">← 返回首页</a>
+    </div>
 
-        <!-- 全局统计卡 -->
-        <div class="stats-grid" id="stats-cards">
-            <div class="stat-card amber">
-                <div class="stat-icon">👥</div>
-                <div class="number" id="stat-users">-</div>
-                <div class="label">注册用户</div>
-            </div>
-            <div class="stat-card violet">
-                <div class="stat-icon">🎵</div>
-                <div class="number" id="stat-songs">-</div>
-                <div class="label">歌曲总数</div>
-            </div>
-            <div class="stat-card cyan">
-                <div class="stat-icon">🔁</div>
-                <div class="number" id="stat-interactions">-</div>
-                <div class="label">交互记录</div>
-            </div>
-            <div class="stat-card amber">
-                <div class="stat-icon">⚡</div>
-                <div class="number" id="stat-active">-</div>
-                <div class="label">活跃用户</div>
+    <!-- 控制栏 -->
+    <div class="glass-card p-3 mb-4 d-flex align-items-center gap-3">
+        <span class="text-white-50">选择用户：</span>
+        <select id="userId" class="form-select form-select-sm" style="max-width:200px" th:each="u : ${users}">
+            <option th:value="${u.id}" th:text="${u.id + ' - ' + u.username}">1 - admin</option>
+        </select>
+        <button onclick="diagnose()" class="btn btn-primary btn-sm">🔍 诊断</button>
+        <button onclick="runEvaluate()" class="btn btn-sm btn-eval">⚡ 离线评估</button>
+        <span id="tierBadge" class="tier-badge ms-3 d-none"></span>
+    </div>
+
+    <!-- 统计 + 图表 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+                <div class="text-white-50 small">总交互数</div>
+                <div id="totalInteractions" class="fs-3 fw-bold text-white">-</div>
             </div>
         </div>
-
-        <!-- 风格分布 -->
-        <div class="admin-card">
-            <h3>🎶 歌曲风格分布</h3>
-            <div id="genre-bars" style="display:flex; flex-direction:column; gap:10px;"></div>
-        </div>
-
-        <!-- 诊断面板 -->
-        <div class="admin-card">
-            <h3>🔍 用户推荐诊断</h3>
-            <div style="display:flex; gap:12px; align-items:center; margin-bottom:18px;">
-                <label style="font-size:13px; color:var(--text-secondary);">选择用户：</label>
-                <select id="user-select" class="variant-primary" style="padding:8px 16px; border-radius:10px; background:rgba(245,158,11,0.1); color:#F59E0B; border:1px solid rgba(245,158,11,0.2); font-size:13px; cursor:pointer;"></select>
-                <label style="font-size:13px; color:var(--text-secondary);">推荐数量：</label>
-                <input type="number" id="limit-input" value="8" min="3" max="20" style="width:60px; padding:8px 12px; border-radius:10px; background:rgba(139,92,246,0.1); color:#8B5CF6; border:1px solid rgba(139,92,246,0.2); font-size:13px;">
-                <button onclick="runDiagnose()" style="padding:8px 20px; border-radius:10px; background:linear-gradient(135deg,#F59E0B,#8B5CF6); color:white; border:none; font-size:13px; font-weight:600; cursor:pointer;">🔎 运行诊断</button>
-            </div>
-
-            <!-- 用户基本信息 -->
-            <div id="diag-user-info" style="display:none; padding:14px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); margin-bottom:20px;">
-                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-                    <div>
-                        <div style="font-size:18px; font-weight:600; color:var(--text-primary);" id="diag-username">-</div>
-                        <div style="font-size:12px; color:var(--text-tertiary);" id="diag-role">-</div>
-                    </div>
-                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
-                    <div>
-                        <div style="font-size:11px; color:var(--text-tertiary);">交互记录</div>
-                        <div style="font-size:18px; font-weight:600; color:#F59E0B;" id="diag-interactions">-</div>
-                    </div>
-                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
-                    <div>
-                        <div style="font-size:11px; color:var(--text-tertiary);">总播放</div>
-                        <div style="font-size:18px; font-weight:600; color:#8B5CF6;" id="diag-plays">-</div>
-                    </div>
-                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
-                    <div>
-                        <div style="font-size:11px; color:var(--text-tertiary);">点赞数</div>
-                        <div style="font-size:18px; font-weight:600; color:#EF4444;" id="diag-likes">-</div>
-                    </div>
-                    <div style="width:1px; height:32px; background:var(--border-subtle);"></div>
-                    <div>
-                        <div style="font-size:11px; color:var(--text-tertiary);">当前阶段</div>
-                        <div class="stage-pill" id="diag-stage">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 权重分配 -->
-            <div id="diag-weights" style="display:none; margin-bottom:24px;">
-                <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">⚖️ 当前权重分配</div>
-                <div id="weight-bars"></div>
-            </div>
-
-            <!-- 三种算法对比 -->
-            <div id="diag-algos" style="display:none; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <!-- 协同过滤 -->
-                <div class="algo-section" style="grid-column:1 / 2;">
-                    <h3><span class="algo-badge cf">🧠 CF</span> 协同过滤 (UserCF + ItemCF)</h3>
-                    <div id="cf-list" style="max-height:300px; overflow-y:auto;"></div>
-                </div>
-                <!-- 内容推荐 -->
-                <div class="algo-section" style="grid-column:2 / 3;">
-                    <h3><span class="algo-badge cb">🎵 CB</span> 内容推荐 (风格+歌手+专辑)</h3>
-                    <div id="cb-list" style="max-height:300px; overflow-y:auto;"></div>
-                </div>
-            </div>
-
-            <!-- 混合推荐最终 -->
-            <div id="diag-hybrid" style="display:none; margin-top:12px;">
-                <div class="algo-section">
-                    <h3><span class="algo-badge hybrid">✨ HYBRID</span> 混合推荐 最终融合结果</h3>
-                    <div id="hybrid-list" style="max-height:400px; overflow-y:auto;"></div>
-                </div>
-            </div>
-
-            <div id="diag-empty" style="text-align:center; padding:40px; color:var(--text-tertiary); font-size:13px;">
-                👆 选择一个用户，点击"运行诊断"查看三种算法的推荐详情
+        <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+                <div class="text-white-50 small">CF 候选</div>
+                <div id="cfSize" class="fs-3 fw-bold text-primary">-</div>
             </div>
         </div>
-    </main>
+        <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+                <div class="text-white-50 small">ALS 候选</div>
+                <div id="alsSize" class="fs-3 fw-bold text-white" style="color:#a78bfa !important">-</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+                <div class="text-white-50 small">CB 候选</div>
+                <div id="cbSize" class="fs-3 fw-bold text-success">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="glass-card p-3">
+                <h6 class="text-white mb-3">📊 四路候选数量对比</h6>
+                <div class="chart-container"><canvas id="countChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card p-3">
+                <h6 class="text-white mb-3">🎯 用户档位分布（交互数）</h6>
+                <div class="chart-container"><canvas id="tierChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALS 模型信息 -->
+    <div id="alsModelCard" class="glass-card p-3 mb-4 d-none">
+        <h6 class="text-white mb-2">🧠 ALS 矩阵分解模型</h6>
+        <div class="d-flex gap-4 text-white-50 small">
+            <span>🎬 用户数: <b id="alsUsers" class="text-white">-</b></span>
+            <span>🎵 歌曲数: <b id="alsSongs" class="text-white">-</b></span>
+            <span>🔮 隐因子维度: <b id="alsDim" class="text-white">-</b></span>
+            <span>📐 迭代次数: <b class="text-white">20</b></span>
+            <span>λ 正则化: <b class="text-white">0.1</b></span>
+        </div>
+    </div>
+
+    <!-- 四种算法结果 -->
+    <div class="row g-3">
+        <div class="col-md-6 col-lg-3">
+            <div class="algo-card">
+                <div class="algo-header algo-cf text-white">① 协同过滤 (UserCF+ItemCF)</div>
+                <div id="cfSongs"></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="algo-card">
+                <div class="algo-header algo-als text-white">② ALS 矩阵分解 (隐因子)</div>
+                <div id="alsSongs"></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="algo-card">
+                <div class="algo-header algo-cb text-white">③ 内容推荐 (风格+歌手)</div>
+                <div id="cbSongs"></div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="algo-card">
+                <div class="algo-header algo-hybrid text-white">④ 混合推荐最终结果</div>
+                <div id="hybridSongs"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 离线评估结果 -->
+    <div id="evalCard" class="glass-card p-4 mt-4 d-none">
+        <h6 class="text-white mb-3">📐 离线评估 (Hold-Out 20%)</h6>
+        <div class="chart-container" style="height:220px"><canvas id="evalChart"></canvas></div>
+        <div id="evalTable" class="eval-result mt-3 text-white"></div>
+    </div>
 </div>
 
 <script>
-    // ========== 全局统计 ==========
-    async function loadStats() {
-        try {
-            const r = await fetch('/admin/api/recommend/stats');
-            const d = await r.json();
-            document.getElementById('stat-users').textContent = d.totalUsers;
-            document.getElementById('stat-songs').textContent = d.totalSongs;
-            document.getElementById('stat-interactions').textContent = d.totalInteractions;
-            document.getElementById('stat-active').textContent = d.activeUsers;
-            // 风格分布条
-            const gb = document.getElementById('genre-bars');
-            const maxG = Math.max(...Object.values(d.genreDistribution));
-            gb.innerHTML = Object.entries(d.genreDistribution).map(([g,c]) => {
-                const pct = (c / maxG * 100).toFixed(0);
-                return `<div style="display:flex; align-items:center; gap:12px;">
-                    <div style="width:70px; font-size:12px; color:var(--text-secondary); flex-shrink:0;">${g || '其他'}</div>
-                    <div style="flex:1; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
-                        <div style="width:${pct}%; height:100%; background:linear-gradient(90deg,#F59E0B,#8B5CF6); border-radius:4px;"></div>
-                    </div>
-                    <div style="width:36px; text-align:right; font-size:12px; color:var(--text-tertiary);">${c}</div>
-                </div>`;
-            }).join('');
-        } catch(e) { console.error('stats error', e); }
-    }
+const apiBase = '/admin/api/recommend';
+let countChart, tierChart, evalChart;
 
-    // ========== 用户下拉 ==========
-    // 用户下拉已由下方 Thymeleaf 渲染，initUsers 保留为空占位
-    function initUsers() {
-        // 直接复用 Thymeleaf 注入的 users 变量（见下方 th:inline script）
+function fillAlgo(divId, data) {
+    const div = document.getElementById(divId);
+    if (!data || !data.songs || data.songs.length === 0) {
+        div.innerHTML = '<div class="song-item text-white-50 text-center py-3">无结果</div>';
+        return;
     }
-</script>
-<script th:inline="javascript">
-    const users = /*[[${users}]]*/ [];
-    const sel = document.getElementById('user-select');
-    users.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.id;
-        opt.textContent = `${u.id}. ${u.username}${u.nickname ? ' (' + u.nickname + ')' : ''}${u.role === 'ROLE_ADMIN' ? ' 🔑' : ''}`;
-        sel.appendChild(opt);
+    div.innerHTML = data.songs.map((s, i) =>
+        `<div class="song-item"><div><span class="song-rank">${i+1}</span><span class="text-white">${s.title}</span> <span class="text-white-50 ms-1">${s.artist}</span></div><span class="text-white-50">${s.genre||''}</span></div>`
+    ).join('');
+}
+
+function diagnose() {
+    const userId = document.getElementById('userId').value;
+    fetch(`${apiBase}/diagnose/${userId}`)
+        .then(r => r.json())
+        .then(r => {
+            if (!r.success) return alert('诊断失败: ' + r.message);
+            const d = r.data;
+
+            // 基本信息
+            document.getElementById('totalInteractions').textContent = d.interactionCount;
+            document.getElementById('cfSize').textContent = d.collaborativeFiltering?.resultCount ?? '-';
+            document.getElementById('alsSize').textContent = d.alsMatrixFactorization?.resultCount ?? '-';
+            document.getElementById('cbSize').textContent = d.contentBased?.resultCount ?? '-';
+
+            // 档位标签
+            const tier = d.adaptiveTier || '';
+            document.getElementById('tierBadge').textContent = tier;
+            document.getElementById('tierBadge').className = 'tier-badge badge ' +
+                (tier.includes('档0') ? 'bg-secondary' :
+                 tier.includes('档1') ? 'bg-primary' :
+                 tier.includes('档2') ? 'bg-success' :
+                 tier.includes('档3') ? 'bg-warning' :
+                 tier.includes('档4') ? 'bg-danger' : 'bg-dark');
+            document.getElementById('tierBadge').classList.remove('d-none');
+
+            // ALS 模型
+            if (d.alsModel) {
+                document.getElementById('alsModelCard').classList.remove('d-none');
+                document.getElementById('alsUsers').textContent = d.alsModel.nUsers;
+                document.getElementById('alsSongs').textContent = d.alsModel.nSongs;
+                document.getElementById('alsDim').textContent = d.alsModel.latentDim;
+            }
+
+            // 算法结果
+            fillAlgo('cfSongs', d.collaborativeFiltering);
+            fillAlgo('alsSongs', d.alsMatrixFactorization);
+            fillAlgo('cbSongs', d.contentBased);
+            fillAlgo('hybridSongs', d.hybridFinal);
+
+            // 候选数量柱状图
+            drawCountChart(d);
+        });
+}
+
+function drawCountChart(d) {
+    const ctx = document.getElementById('countChart').getContext('2d');
+    if (countChart) countChart.destroy();
+    countChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['CF邻居', 'ALS隐因子', '内容推荐', '混合最终'],
+            datasets: [{
+                label: '返回歌曲数',
+                data: [
+                    d.collaborativeFiltering?.resultCount ?? 0,
+                    d.alsMatrixFactorization?.resultCount ?? 0,
+                    d.contentBased?.resultCount ?? 0,
+                    d.hybridFinal?.resultCount ?? 0
+                ],
+                backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#fff' } } },
+            scales: {
+                y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+            }
+        }
     });
-    sel.value = '3'; // 默认 admin
-    loadStats();
-    // runDiagnose() 延迟到下方 script 块定义后再调用
-</script>
-<script>
-    // ========== 运行诊断 ==========
-    async function runDiagnose() {
-        const userId = document.getElementById('user-select').value;
-        const limit = parseInt(document.getElementById('limit-input').value) || 8;
-        if (!userId) return;
 
-        document.getElementById('diag-empty').style.display = 'none';
-        document.getElementById('diag-user-info').style.display = 'none';
-        document.getElementById('diag-weights').style.display = 'none';
-        document.getElementById('diag-algos').style.display = 'none';
-        document.getElementById('diag-hybrid').style.display = 'none';
+    // 档位分布饼图（所有用户交互数分布）
+    fetch(`${apiBase}/stats`).then(r => r.json()).then(r => {
+        const perUser = r.data.interactionsPerUser || {};
+        const buckets = [0, 0, 0, 0, 0];
+        Object.values(perUser).forEach(n => {
+            if (n <= 3) buckets[0]++;
+            else if (n <= 10) buckets[1]++;
+            else if (n <= 30) buckets[2]++;
+            else if (n <= 100) buckets[3]++;
+            else buckets[4]++;
+        });
+        const ctx2 = document.getElementById('tierChart').getContext('2d');
+        if (tierChart) tierChart.destroy();
+        tierChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['档0: 极稀疏(0-3)', '档1: 稀疏(4-10)', '档2: 普通(11-30)', '档3: 活跃(31-100)', '档4: 专家(100+)'],
+                datasets: [{
+                    data: buckets,
+                    backgroundColor: ['#6c757d', '#0d6efd', '#059669', '#d97706', '#dc2626'],
+                    borderWidth: 2, borderColor: '#1a1a2e'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { color: '#fff', font: { size: 11 } } } }
+            }
+        });
+    });
+}
 
-        try {
-            const r = await fetch(`/admin/api/recommend/diagnose/${userId}?limit=${limit}`);
-            const d = await r.json();
-            renderDiagnose(d);
-        } catch(e) {
-            alert('诊断失败: ' + e.message);
-        }
+function runEvaluate() {
+    const btn = event.target;
+    btn.disabled = true; btn.textContent = '⏳ 评估中...';
+    fetch(`${apiBase}/evaluate`)
+        .then(r => r.json())
+        .then(r => {
+            btn.disabled = false; btn.textContent = '⚡ 离线评估';
+            const d = r.data;
+            document.getElementById('evalCard').classList.remove('d-none');
+
+            // 画 Precision / Recall / NDCG 对比柱状图
+            const algos = (d.algorithms || []).map(a => a.algorithm);
+            const metrics = ['precision@10', 'recall@10', 'ndcg@10'];
+            const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
+
+            const datasets = metrics.map((m, mi) => ({
+                label: m,
+                data: (d.algorithms || []).map(a => {
+                    const key = m.replace('@10', '');
+                    return a[key] ?? a[m] ?? 0;
+                }),
+                backgroundColor: colors[mi],
+                borderRadius: 4
+            }));
+
+            const ctx = document.getElementById('evalChart').getContext('2d');
+            if (evalChart) evalChart.destroy();
+            evalChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: algos, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#fff' } } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { ticks: { color: '#fff', maxRotation: 30 }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                    }
+                }
+            });
+
+            // 表格
+            let html = `<div class="text-white-50 mb-2">耗时 ${d.totalMs}ms · ${d.method}</div><table class="table table-dark table-sm table-bordered"><thead><tr><th>算法</th>${metrics.map(m => `<th>${m}</th>`).join('')}</tr></thead><tbody>`;
+            (d.algorithms || []).forEach(a => {
+                html += `<tr><td class="fw-bold">${a.algorithm}</td>` +
+                    metrics.map(m => {
+                        const v = a[m.replace('@10','')] ?? a[m] ?? 0;
+                        return `<td>${v.toFixed(4)}</td>`;
+                    }).join('') + '</tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('evalTable').innerHTML = html;
+        });
+}
+
+// 页面加载后自动选第一个用户
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('userId');
+    if (sel && sel.options.length > 0) {
+        sel.value = sel.options[0].value;
+        diagnose();
     }
-
-    function renderDiagnose(d) {
-        // 用户信息
-        const u = d.user || {};
-        document.getElementById('diag-username').textContent = u.username || '-';
-        document.getElementById('diag-role').textContent = u.role === 'ROLE_ADMIN' ? '🔑 管理员' : '👤 普通用户';
-        document.getElementById('diag-interactions').textContent = d.interactionCount;
-        document.getElementById('diag-plays').textContent = d.interactionDetail?.playCount || 0;
-        document.getElementById('diag-likes').textContent = d.interactionDetail?.likedCount || 0;
-        const stage = document.getElementById('diag-stage');
-        stage.textContent = d.userStage;
-        stage.className = 'stage-pill ' + (d.userStage.includes('冷启动') ? 'stage-cold' : d.userStage.includes('稀疏') ? 'stage-sparse' : 'stage-normal');
-        document.getElementById('diag-user-info').style.display = 'block';
-
-        // 权重（根据 interactionCount 推断）
-        const ic = d.interactionCount;
-        let weights;
-        if (ic === 0) {
-            weights = [{label:'🔥 热门', cls:'pop', pct:50}, {label:'🎲 随机探索', cls:'explore', pct:50}];
-        } else if (ic <= 5) {
-            weights = [{label:'🧠 协同过滤', cls:'cf', pct:20}, {label:'🎵 内容推荐', cls:'cb', pct:50}, {label:'🔥 热门', cls:'pop', pct:20}, {label:'🎲 随机探索', cls:'explore', pct:10}];
-        } else {
-            weights = [{label:'🧠 协同过滤', cls:'cf', pct:50}, {label:'🎵 内容推荐', cls:'cb', pct:20}, {label:'🔥 热门', cls:'pop', pct:15}, {label:'🎲 随机探索', cls:'explore', pct:15}];
-        }
-        const wb = document.getElementById('weight-bars');
-        wb.innerHTML = weights.map(w => `
-            <div style="margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; font-size:12px;">
-                    <span style="color:var(--text-secondary);">${w.label}</span>
-                    <span style="color:var(--text-tertiary);">${w.pct}%</span>
-                </div>
-                <div class="weight-bar">
-                    <div class="weight-fill" style="width:${w.pct}%; background:${w.cls === 'cf' ? '#F59E0B' : w.cls === 'cb' ? '#8B5CF6' : w.cls === 'pop' ? '#EF4444' : '#22C55E'};"></div>
-                </div>
-            </div>
-        `).join('');
-        document.getElementById('diag-weights').style.display = 'block';
-
-        // CF & CB
-        renderSongList('cf-list', d.collaborativeFiltering?.songs || []);
-        renderSongList('cb-list', d.contentBased?.songs || []);
-        document.getElementById('diag-algos').style.display = 'grid';
-
-        // 最终融合
-        renderSongList('hybrid-list', d.hybridFinal?.songs || []);
-        document.getElementById('diag-hybrid').style.display = 'block';
-    }
-
-    function renderSongList(elId, songs) {
-        const el = document.getElementById(elId);
-        if (!songs.length) { el.innerHTML = '<div style="color:var(--text-tertiary); font-size:12px; padding:12px 0;">无推荐结果</div>'; return; }
-        el.innerHTML = songs.map((s, i) => `
-            <div class="song-row">
-                <div class="song-rank">${i+1}</div>
-                <div>
-                    <div style="font-weight:500; color:var(--text-primary);">${escapeHtml(s.title)}</div>
-                    <div class="song-meta">${escapeHtml(s.artist)} <span class="song-genre">${escapeHtml(s.genre || '-')}</span></div>
-                </div>
-                <div class="song-stats">▶ ${(s.playCount || 0).toLocaleString()} ❤ ${(s.likeCount || 0).toLocaleString()}</div>
-            </div>
-        `).join('');
-    }
-
-    function escapeHtml(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-    // 页面加载完成后自动运行一次诊断（默认用户）
-    runDiagnose();
+});
 </script>
 </body>
 </html>
