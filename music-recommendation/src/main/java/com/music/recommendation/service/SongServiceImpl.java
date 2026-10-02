@@ -7,6 +7,7 @@ import com.music.recommendation.repository.UserSongInteractionRepository;
 import com.music.recommendation.service.recommendation.HybridRecommenderService;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -108,9 +109,11 @@ public class SongServiceImpl implements SongService {
      */
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "songs", key = "'song:'+#songId")
-    @CacheEvict(cacheNames = "songs", key = "'hot:50'")
-    @CacheEvict(cacheNames = "recommendations", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "songs", key = "'song:'+#songId"),
+        @CacheEvict(cacheNames = "songs", key = "'hot:50'"),
+        @CacheEvict(cacheNames = "recommendations", allEntries = true)
+    })
     public void recordPlay(Long userId, Long songId) {
         songRepository.findById(songId).ifPresent(song -> {
             song.setPlayCount(song.getPlayCount() + 1);
@@ -134,9 +137,11 @@ public class SongServiceImpl implements SongService {
      */
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "songs", key = "'song:'+#songId")
-    @CacheEvict(cacheNames = "songs", key = "'hot:50'")
-    @CacheEvict(cacheNames = "recommendations", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "songs", key = "'song:'+#songId"),
+        @CacheEvict(cacheNames = "songs", key = "'hot:50'"),
+        @CacheEvict(cacheNames = "recommendations", allEntries = true)
+    })
     public void recordLike(Long userId, Long songId) {
         if (userId <= 0) return;
 
