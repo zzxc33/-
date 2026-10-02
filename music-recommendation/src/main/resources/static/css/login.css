@@ -598,6 +598,68 @@ body {
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- 测试账号提示（开发演示用） ---------- */
+.test-accounts {
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: rgba(167, 139, 250, 0.08);
+    border: 1px dashed rgba(167, 139, 250, 0.25);
+    border-radius: 10px;
+}
+
+.test-accounts-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--violet-light);
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
+.test-account-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.test-account-item:last-child {
+    margin-bottom: 0;
+}
+
+.ta-role {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.ta-role-admin {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber-light);
+}
+
+.ta-role-user {
+    background: rgba(34, 211, 238, 0.15);
+    color: var(--cyan-light);
+}
+
+.ta-label {
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+.ta-value {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
 /* ---------- 注册链接 ---------- */
 .register-link {
     text-align: center;
