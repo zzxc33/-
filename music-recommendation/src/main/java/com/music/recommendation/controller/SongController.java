@@ -38,12 +38,19 @@ public class SongController {
     public String songDetail(@PathVariable Long id,
                              @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser,
                              Model model) {
-        songService.getSongById(id).ifPresent(song -> {
-            model.addAttribute("song", song);
-        });
-        // 记录播放（使用当前用户）
-        Long userId = userService.findByUsername(currentUser.getUsername())
-                .map(User::getId).orElse(0L);
+        // 歌曲不存在时重定向到搜索页
+        Song song = songService.getSongById(id).orElse(null);
+        if (song == null) {
+            return "redirect:/song/search";
+        }
+        model.addAttribute("song", song);
+
+        // 记录播放（访客 currentUser 为 null，userId=0 时跳过用户关联）
+        Long userId = 0L;
+        if (currentUser != null) {
+            userId = userService.findByUsername(currentUser.getUsername())
+                    .map(User::getId).orElse(0L);
+        }
         songService.recordPlay(userId, id);
 
         // 获取相关歌曲推荐（基于内容）
@@ -100,8 +107,11 @@ public class SongController {
     @ResponseBody
     public Map<String, Object> apiPlay(@PathVariable Long id,
                                        @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser) {
-        Long userId = userService.findByUsername(currentUser.getUsername())
-                .map(User::getId).orElse(0L);
+        Long userId = 0L;
+        if (currentUser != null) {
+            userId = userService.findByUsername(currentUser.getUsername())
+                    .map(User::getId).orElse(0L);
+        }
         songService.recordPlay(userId, id);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -113,17 +123,19 @@ public class SongController {
     @ResponseBody
     public Map<String, Object> apiLike(@PathVariable Long id,
                                        @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser) {
+        Map<String, Object> result = new HashMap<>();
+        if (currentUser == null) {
+            result.put("success", false);
+            result.put("message", "请先登录");
+            return result;
+        }
         Long userId = userService.findByUsername(currentUser.getUsername())
                 .map(User::getId).orElse(0L);
         songService.recordLike(userId, id);
 
         // 查询当前点赞状态返回给前端
-        boolean nowLiked = userService.findByUsername(currentUser.getUsername())
-                .map(User::getId)
-                .map(uid -> songService.isLiked(uid, id))
-                .orElse(false);
+        boolean nowLiked = songService.isLiked(userId, id);
 
-        Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("liked", nowLiked);
         // 同时返回更新后的喜欢数
@@ -140,6 +152,11 @@ public class SongController {
                                        @RequestParam String content,
                                        @AuthenticationPrincipal org.springframework.security.core.userdetails.User currentUser) {
         Map<String, Object> result = new HashMap<>();
+        if (currentUser == null) {
+            result.put("success", false);
+            result.put("message", "请先登录");
+            return result;
+        }
         if (content == null || content.trim().isEmpty()) {
             result.put("success", false);
             result.put("message", "评论内容不能为空");

@@ -324,7 +324,9 @@
                     </div>
                     <div class="detail-actions">
                         <button class="btn-play-big" id="play-big-btn" title="播放"
-                                th:onclick="|var song={id:${song.id},title:document.querySelector('.detail-info h1').textContent,artist:document.querySelector('.detail-info .artist').textContent,coverUrl:document.getElementById('detail-cover').src,genre:'${song.genre}',duration:'${song.duration}'}; playSong(song);|">
+                                th:data-song-Id="${song.id}"
+                                th:data-genre="${song.genre}"
+                                th:data-duration="${song.duration}">
                             ▶
                         </button>
                         <button class="btn-icon-big" id="detail-like-btn" title="喜欢" th:data-song-id="${song.id}" onclick="toggleLike(this)" th:classappend="${isLiked} ? 'liked' : ''" th:text="${isLiked} ? '❤️' : '🤍'"></button>
@@ -551,6 +553,19 @@
                 });
             });
             if (typeof Player !== 'undefined' && typeof Player.updateQueueList === 'function') Player.updateQueueList();
+
+            // 大播放按钮绑定（Thymeleaf 3.1 安全机制：字符串变量不能直接在 th:onclick 中输出）
+            var playBigBtn = document.getElementById('play-big-btn');
+            if (playBigBtn) {
+                playBigBtn.addEventListener('click', function() {
+                    var id = this.dataset.songId;
+                    fetch('/api/songs/' + id).then(function(r) { return r.json(); }).then(function(resp) {
+                        if (resp && resp.data) {
+                            playSong(resp.data);
+                        }
+                    }).catch(function() {});
+                });
+            }
 
             // 推荐歌曲卡片小按钮绑定
             document.querySelectorAll('#recommend-grid .btn-like').forEach(function(btn) {
