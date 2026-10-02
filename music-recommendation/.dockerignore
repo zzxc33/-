@@ -1,0 +1,42 @@
+# Maven 构建产物
+target/
+*.class
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+.factorypath
+
+# Git
+.git/
+.gitattributes
+.gitignore
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+
+# Maven Wrapper（镜像里自带 3.9，不需要本地 wrapper）
+.mvn/
+mvnw
+mvnw.cmd
+
+# Docker 自身文件（避免递归拷贝）
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+docker/
+
+# 项目根目录临时文件
+*.sql.bak
+*.bak
+README*.md
