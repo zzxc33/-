@@ -137,6 +137,54 @@ spring:
     caffeine:
       spec: "maximumSize=1000, expireAfterWrite=300s, recordStats"
 
+# ==================== 自适应推荐权重配置 ====================
+# 按用户交互数量分档，动态调整 CF/CB/热度/探索 四路权重
+# minInteractions 表示该档的"最少交互数"，按升序排列
+# 每档权重总和应接近 1.0
+recommender:
+  adaptive:
+    enabled: true                        # 关闭则回退固定权重
+    cold-start-hot-ratio: 0.5            # 冷启动: 热门占比
+    tiers:
+      # 档0: 极稀疏用户 (0-3 次交互) — 内容为主
+      - min-interactions: 0
+        cf: 0.05
+        cb: 0.45
+        popularity: 0.30
+        explore: 0.20
+      # 档1: 稀疏用户 (4-10 次) — CB+热门平衡
+      - min-interactions: 4
+        cf: 0.20
+        cb: 0.35
+        popularity: 0.25
+        explore: 0.20
+      # 档2: 普通用户 (11-30 次) — CF 初显
+      - min-interactions: 11
+        cf: 0.40
+        cb: 0.25
+        popularity: 0.20
+        explore: 0.15
+      # 档3: 活跃用户 (31-100 次) — CF 主导
+      - min-interactions: 31
+        cf: 0.55
+        cb: 0.20
+        popularity: 0.15
+        explore: 0.10
+      # 档4: 专家用户 (100+ 次) — CF 强势 + 低探索
+      - min-interactions: 101
+        cf: 0.65
+        cb: 0.15
+        popularity: 0.12
+        explore: 0.08
+  # 动态调整因子（额外权重修正，叠加到基础档权重上）
+  dynamic:
+    cf-empty-penalty: 0.3         # CF 返回 < N 首时，CF 权重 × (1 - penalty)
+    cf-min-results: 3             # CF 返回少于这个数就触发 penalty
+    active-days: 7                # 最近 N 天有交互 → 略增 CF
+    inactive-days: 30             # N 天无交互 → 略降 CF
+    cf-boost-active: 0.10         # 活跃用户 CF 权重额外 +0.10
+    cf-penalty-inactive: 0.10     # 沉寂用户 CF 权重额外 -0.10
+
 # 验证码配置
 kaptcha:
   border: "no"

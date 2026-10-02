@@ -65,4 +65,9 @@ public interface UserSongInteractionRepository extends JpaRepository<UserSongInt
     /** 批量计算多首歌的独立用户数（避免循环内 N+1） */
     @Query("SELECT u.songId, COUNT(DISTINCT u.userId) FROM UserSongInteraction u WHERE u.songId IN :songIds GROUP BY u.songId")
     List<Object[]> countDistinctUsersBySongIds(@Param("songIds") Collection<Long> songIds);
+
+    /** 获取用户最近一次交互时间（lastPlayedAt 或 likedAt 的较大值） */
+    @Query("SELECT MAX(GREATEST(COALESCE(u.lastPlayedAt, u.createdAt), COALESCE(u.likedAt, u.createdAt))) " +
+           "FROM UserSongInteraction u WHERE u.userId = :userId")
+    Optional<java.time.LocalDateTime> findLastInteractionTime(@Param("userId") Long userId);
 }
