@@ -46,6 +46,7 @@
         </select>
         <button onclick="diagnose()" class="btn btn-primary btn-sm">🔍 诊断</button>
         <button onclick="runEvaluate()" class="btn btn-sm btn-eval">⚡ 离线评估</button>
+        <button onclick="runColdStart()" class="btn btn-sm" style="background:linear-gradient(90deg,#06b6d4,#0891b2);border:none;color:#fff;font-weight:600">🧊 冷启动评估</button>
         <span id="tierBadge" class="tier-badge ms-3 d-none"></span>
     </div>
 
@@ -139,11 +140,18 @@
         <div class="chart-container" style="height:220px"><canvas id="evalChart"></canvas></div>
         <div id="evalTable" class="eval-result mt-3 text-white"></div>
     </div>
+
+    <!-- 冷启动评估结果 -->
+    <div id="coldCard" class="glass-card p-4 mt-4 d-none">
+        <h6 class="text-white mb-3">🧊 冷启动评估 (随机保留 3 条训练, GT=5)</h6>
+        <div class="chart-container" style="height:220px"><canvas id="coldChart"></canvas></div>
+        <div id="coldTable" class="eval-result mt-3 text-white"></div>
+    </div>
 </div>
 
 <script>
 const apiBase = '/admin/api/recommend';
-let countChart, tierChart, evalChart;
+let countChart, tierChart, evalChart, coldChart;
 
 function fillAlgo(divId, data) {
     const div = document.getElementById(divId);
@@ -260,6 +268,51 @@ function drawCountChart(d) {
     });
 }
 
+// === 共用评估渲染 ===
+function renderEvalResult(data, chartId, tableId, chartVar) {
+    const algos = (data.algorithms || []).map(a => a.algorithm);
+    const metrics = ['precision@10', 'recall@10', 'ndcg@10'];
+    const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+
+    const datasets = metrics.map((m, mi) => ({
+        label: m,
+        data: (data.algorithms || []).map(a => {
+            const key = m.replace('@10', '');
+            return a[key] ?? a[m] ?? 0;
+        }),
+        backgroundColor: colors[mi],
+        borderRadius: 4
+    }));
+
+    const ctx = document.getElementById(chartId).getContext('2d');
+    if (chartVar && chartVar.destroy) chartVar.destroy();
+    chartVar = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: algos, datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#fff' } } },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                x: { ticks: { color: '#fff', maxRotation: 30 }, grid: { color: 'rgba(255,255,255,0.1)' } }
+            }
+        }
+    });
+
+    let html = `<div class="text-white-50 mb-2">耗时 ${data.totalMs}ms · ${data.method}</div><table class="table table-dark table-sm table-bordered"><thead><tr><th>算法</th>${metrics.map(m => `<th>${m}</th>`).join('')}</tr></thead><tbody>`;
+    (data.algorithms || []).forEach(a => {
+        html += `<tr><td class="fw-bold">${a.algorithm}</td>` +
+            metrics.map(m => {
+                const v = a[m.replace('@10','')] ?? a[m] ?? 0;
+                return `<td>${v.toFixed(4)}</td>`;
+            }).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById(tableId).innerHTML = html;
+
+    return chartVar;
+}
+
 function runEvaluate() {
     const btn = event.target;
     btn.disabled = true; btn.textContent = '⏳ 评估中...';
@@ -269,48 +322,20 @@ function runEvaluate() {
             btn.disabled = false; btn.textContent = '⚡ 离线评估';
             const d = r.data;
             document.getElementById('evalCard').classList.remove('d-none');
+            evalChart = renderEvalResult(d, 'evalChart', 'evalTable', evalChart);
+        });
+}
 
-            // 画 Precision / Recall / NDCG 对比柱状图
-            const algos = (d.algorithms || []).map(a => a.algorithm);
-            const metrics = ['precision@10', 'recall@10', 'ndcg@10'];
-            const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
-
-            const datasets = metrics.map((m, mi) => ({
-                label: m,
-                data: (d.algorithms || []).map(a => {
-                    const key = m.replace('@10', '');
-                    return a[key] ?? a[m] ?? 0;
-                }),
-                backgroundColor: colors[mi],
-                borderRadius: 4
-            }));
-
-            const ctx = document.getElementById('evalChart').getContext('2d');
-            if (evalChart) evalChart.destroy();
-            evalChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: algos, datasets },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#fff' } } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        x: { ticks: { color: '#fff', maxRotation: 30 }, grid: { color: 'rgba(255,255,255,0.1)' } }
-                    }
-                }
-            });
-
-            // 表格
-            let html = `<div class="text-white-50 mb-2">耗时 ${d.totalMs}ms · ${d.method}</div><table class="table table-dark table-sm table-bordered"><thead><tr><th>算法</th>${metrics.map(m => `<th>${m}</th>`).join('')}</tr></thead><tbody>`;
-            (d.algorithms || []).forEach(a => {
-                html += `<tr><td class="fw-bold">${a.algorithm}</td>` +
-                    metrics.map(m => {
-                        const v = a[m.replace('@10','')] ?? a[m] ?? 0;
-                        return `<td>${v.toFixed(4)}</td>`;
-                    }).join('') + '</tr>';
-            });
-            html += '</tbody></table>';
-            document.getElementById('evalTable').innerHTML = html;
+function runColdStart() {
+    const btn = event.target;
+    btn.disabled = true; btn.textContent = '⏳ 冷启动中...';
+    fetch(`${apiBase}/evaluate/cold-start`)
+        .then(r => r.json())
+        .then(r => {
+            btn.disabled = false; btn.textContent = '🧊 冷启动评估';
+            const d = r.data;
+            document.getElementById('coldCard').classList.remove('d-none');
+            coldChart = renderEvalResult(d, 'coldChart', 'coldTable', coldChart);
         });
 }
 
