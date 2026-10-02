@@ -34,17 +34,20 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
     private static final Random RANDOM = new Random();
 
     private final CollaborativeRecommender collaborativeRecommender;
+    private final AlsRecommender alsRecommender;
     private final ContentBasedRecommender contentBasedRecommender;
     private final SongRepository songRepository;
     private final UserSongInteractionRepository interactionRepository;
     private final RecommenderProperties props;
 
     public HybridRecommenderServiceImpl(CollaborativeRecommender collaborativeRecommender,
+                                        AlsRecommender alsRecommender,
                                         ContentBasedRecommender contentBasedRecommender,
                                         SongRepository songRepository,
                                         UserSongInteractionRepository interactionRepository,
                                         RecommenderProperties props) {
         this.collaborativeRecommender = collaborativeRecommender;
+        this.alsRecommender = alsRecommender;
         this.contentBasedRecommender = contentBasedRecommender;
         this.songRepository = songRepository;
         this.interactionRepository = interactionRepository;
@@ -61,15 +64,16 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
         // === Step 1: 根据交互数量选基础档权重 ===
         RecommenderProperties.Tier tier = pickTier(interactionCount);
 
-        // === Step 2: 先跑 CF/CB，结果数量出来后再应用动态调整 ===
+        // === Step 2: 先跑 CF/ALS/CB，结果数量出来后再应用动态调整 ===
         Set<Long> interactedSongIds = new HashSet<>(interactionRepository.findSongIdsByUserId(userId));
         int candidateLimit = limit * 3;
         List<Song> collaborativeSongs = collaborativeRecommender.recommend(userId, candidateLimit);
+        List<Song> alsSongs = alsRecommender.recommend(userId, candidateLimit);
         List<Song> contentBasedSongs = contentBasedRecommender.recommend(userId, candidateLimit);
         List<Song> popularitySongs = getPopularityBasedRecommendations(candidateLimit, interactedSongIds);
         List<Song> exploreSongs = getExploreRecommendations(candidateLimit, interactedSongIds);
 
-        if (collaborativeSongs.isEmpty() && contentBasedSongs.isEmpty()
+        if (collaborativeSongs.isEmpty() && alsSongs.isEmpty() && contentBasedSongs.isEmpty()
                 && popularitySongs.isEmpty() && exploreSongs.isEmpty()) {
             return getColdStartRecommendations(limit);
         }
@@ -78,17 +82,19 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
         WeightResult weights = computeFinalWeights(tier, userId, collaborativeSongs);
 
         log.info("[HybridAdaptive] userId={} interactions={} tierMin={} " +
-                        "→ CF={} CB={} Pop={} Exp={} | cfSize={} cbSize={}",
+                        "→ CF={} ALS={} CB={} Pop={} Exp={} | cfSize={} alsSize={} cbSize={}",
                 userId, interactionCount, tier.getMinInteractions(),
                 String.format("%.2f", weights.cf),
+                String.format("%.2f", weights.als),
                 String.format("%.2f", weights.cb),
                 String.format("%.2f", weights.popularity),
                 String.format("%.2f", weights.explore),
-                collaborativeSongs.size(), contentBasedSongs.size());
+                collaborativeSongs.size(), alsSongs.size(), contentBasedSongs.size());
 
         // === Step 4: 统一归一化加权融合 ===
         Map<Long, Double> scoreMap = new HashMap<>();
         rankAndScore(collaborativeSongs, weights.cf, candidateLimit, scoreMap);
+        rankAndScore(alsSongs, weights.als, candidateLimit, scoreMap);
         rankAndScore(contentBasedSongs, weights.cb, candidateLimit, scoreMap);
         rankAndScore(popularitySongs, weights.popularity, candidateLimit, scoreMap);
         rankAndScore(exploreSongs, weights.explore, candidateLimit, scoreMap);
@@ -155,58 +161,78 @@ public class HybridRecommenderServiceImpl implements HybridRecommenderService {
     }
 
     /**
-     * 最终权重 = 基础档 × (CF 空结果惩罚) + 活跃度修正 → 归一化
+     * 最终权重 = 基础档 + CF/ALS 拆分 + 动态因子 + 活跃度 → 归一化
+     *
+     * 5 路融合: CF(邻居) + ALS(隐因子) + CB(内容) + Popularity(热度) + Explore(探索)
+     * CF 与 ALS 之间是互补关系：
+     *   - CF 基于邻居，能利用显式相似性，小用户群效果好
+     *   - ALS 基于隐因子矩阵分解，能捕捉低秩泛化模式
+     *   - 两者权重和 = 配置中的 cf（协同总权重）
+     *   - 默认 CF:ALS = 60:40；CF 空结果时向 ALS 倾斜
      */
     private WeightResult computeFinalWeights(RecommenderProperties.Tier tier,
                                              Long userId,
                                              List<Song> cfSongs) {
-        double cf = tier.getCf();
+        double cfTotal = tier.getCf();
         double cb = tier.getCb();
         double pop = tier.getPopularity();
         double exp = tier.getExplore();
 
-        // 因子1: CF 空结果惩罚
+        // === 先拆分 CF 为 CF邻居 + ALS隐因子 ===
+        double cfRatio = 0.60, alsRatio = 0.40;
         if (cfSongs.size() < props.getDynamic().getCfMinResults()) {
-            double penalty = props.getDynamic().getCfEmptyPenalty();
-            double cfPenalized = cf * (1 - penalty);
-            double shift = cf - cfPenalized; // 从 CF 转移出去的权重
-            cf = cfPenalized;
-            // 转移给 CB (60%) + Popularity (40%)
+            // CF 空结果 → 向 ALS 倾斜（ALS 对稀疏更鲁棒）
+            cfRatio = 0.30; alsRatio = 0.70;
+            log.debug("[HybridAdaptive] CF empty, shift ratio CF:ALS 0.60:0.40 → 0.30:0.70");
+        }
+        double cf = cfTotal * cfRatio;
+        double als = cfTotal * alsRatio;
+
+        // === 动态因子 ===
+        // CF 空结果惩罚（已经在上面通过调整 CF:ALS 比例解决大部分）
+        // 但如果 ALS 也没结果，再惩罚总协同权重
+        double cfEmptyPenalty = 0;
+        if (cfSongs.size() < props.getDynamic().getCfMinResults()) {
+            cfEmptyPenalty = props.getDynamic().getCfEmptyPenalty();
+            cf = cf * (1 - cfEmptyPenalty);
+            als = als * (1 - cfEmptyPenalty * 0.7); // ALS 只惩罚 70%
+            double shift = cfTotal * (cfRatio * cfEmptyPenalty + alsRatio * cfEmptyPenalty * 0.7);
             cb += shift * 0.6;
             pop += shift * 0.4;
-            log.debug("[HybridAdaptive] CF empty penalty: {} -> {} (shift {})", tier.getCf(), cf, shift);
         }
 
-        // 因子2: 活跃度修正
+        // === 活跃度修正 ===
         Optional<LocalDateTime> lastOpt = interactionRepository.findLastInteractionTime(userId);
         if (lastOpt.isPresent()) {
             long daysAgo = ChronoUnit.DAYS.between(lastOpt.get(), LocalDateTime.now());
             if (daysAgo <= props.getDynamic().getActiveDays()) {
-                // 活跃：CF 加权
+                // 活跃：总协同信号加权（CF 和 ALS 同时受益）
                 double boost = props.getDynamic().getCfBoostActive();
-                cf = Math.min(cf + boost, 0.90); // cap at 0.90
-                exp = Math.max(exp - boost * 0.5, 0.02); // 活跃用户少点探索
+                cf = Math.min(cf + boost * cfRatio, 0.60);
+                als = Math.min(als + boost * alsRatio, 0.60);
+                exp = Math.max(exp - boost * 0.5, 0.02);
             } else if (daysAgo >= props.getDynamic().getInactiveDays()) {
-                // 沉寂：CF 降权，探索加权
+                // 沉寂：降总协同，提升探索
                 double penalty = props.getDynamic().getCfPenaltyInactive();
-                cf = Math.max(cf - penalty, 0.05);
+                cf = Math.max(cf - penalty * cfRatio, 0.02);
+                als = Math.max(als - penalty * alsRatio, 0.02);
                 exp += penalty * 0.7;
             }
         }
 
-        // 归一化到 1.0
-        double total = cf + cb + pop + exp;
+        // === 归一化到 1.0 ===
+        double total = cf + als + cb + pop + exp;
         if (total > 0) {
-            cf /= total; cb /= total; pop /= total; exp /= total;
+            cf /= total; als /= total; cb /= total; pop /= total; exp /= total;
         }
 
-        return new WeightResult(cf, cb, pop, exp);
+        return new WeightResult(cf, als, cb, pop, exp);
     }
 
     private static class WeightResult {
-        final double cf, cb, popularity, explore;
-        WeightResult(double cf, double cb, double popularity, double explore) {
-            this.cf = cf; this.cb = cb; this.popularity = popularity; this.explore = explore;
+        final double cf, als, cb, popularity, explore;
+        WeightResult(double cf, double als, double cb, double popularity, double explore) {
+            this.cf = cf; this.als = als; this.cb = cb; this.popularity = popularity; this.explore = explore;
         }
     }
 
