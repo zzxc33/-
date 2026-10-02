@@ -17,9 +17,9 @@ spring:
   # 数据源配置（Druid 连接池）
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:music_recommendation}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:123}
+    url: jdbc:mysql://localhost:3306/music_recommendation?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
     # Druid 连接池参数
     druid:
